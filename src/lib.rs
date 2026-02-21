@@ -406,4 +406,83 @@ mod tests {
             "Stars should be beyond max zoom-out distance"
         );
     }
+
+    // ── Planet selection / camera transition ──
+
+    #[test]
+    fn camera_set_target_sets_lerp_fields() {
+        let mut cam = Camera::new(1.0);
+        let target = glam::Vec3::new(10.0, 0.0, 0.0);
+        cam.set_target(target, 50.0);
+        assert!(cam.lerp_target.is_some(), "lerp_target should be set");
+        assert!(cam.lerp_distance.is_some(), "lerp_distance should be set");
+        assert_eq!(cam.lerp_target.unwrap(), target);
+        assert_eq!(cam.lerp_distance.unwrap(), 50.0);
+    }
+
+    #[test]
+    fn camera_set_target_clamps_distance() {
+        let mut cam = Camera::new(1.0);
+        // Request a distance below min
+        cam.set_target(glam::Vec3::ZERO, 0.001);
+        assert!(
+            cam.lerp_distance.unwrap() >= cam.min_distance,
+            "lerp_distance should be clamped to min_distance"
+        );
+        // Request a distance above max
+        cam.set_target(glam::Vec3::ZERO, 99_999.0);
+        assert!(
+            cam.lerp_distance.unwrap() <= cam.max_distance,
+            "lerp_distance should be clamped to max_distance"
+        );
+    }
+
+    #[test]
+    fn camera_update_transition_moves_toward_target() {
+        let mut cam = Camera::new(1.0);
+        let target = glam::Vec3::new(100.0, 0.0, 0.0);
+        cam.set_target(target, 20.0);
+
+        let initial_dist = cam.target.distance(target);
+        cam.update_transition(0.1); // one large step
+        let after_dist = cam.target.distance(target);
+
+        assert!(
+            after_dist < initial_dist,
+            "Camera should move closer to lerp_target after update_transition"
+        );
+    }
+
+    #[test]
+    fn camera_update_transition_converges() {
+        let mut cam = Camera::new(1.0);
+        let target = glam::Vec3::new(50.0, 0.0, 0.0);
+        cam.set_target(target, 30.0);
+
+        // Run many frames
+        for _ in 0..200 {
+            cam.update_transition(0.016);
+        }
+
+        assert!(
+            cam.target.distance(target) < 0.1,
+            "Camera target should converge to lerp_target"
+        );
+        assert!(
+            (cam.distance - 30.0).abs() < 0.1,
+            "Camera distance should converge to lerp_distance"
+        );
+        assert!(cam.lerp_target.is_none(), "lerp_target should be None after convergence");
+        assert!(cam.lerp_distance.is_none(), "lerp_distance should be None after convergence");
+    }
+
+    #[test]
+    fn camera_no_transition_is_noop() {
+        let mut cam = Camera::new(1.0);
+        let old_target = cam.target;
+        let old_dist = cam.distance;
+        cam.update_transition(1.0); // no lerp_target set
+        assert_eq!(cam.target, old_target, "Target should not change without set_target");
+        assert_eq!(cam.distance, old_dist, "Distance should not change without set_target");
+    }
 }

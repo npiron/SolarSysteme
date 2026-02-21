@@ -11,6 +11,34 @@
 <body>
     <canvas id="solara-canvas"></canvas>
 
+    <!-- ── Planet info panel ── -->
+    <div id="planet-info" class="planet-info hidden">
+        <h3 id="planet-name">—</h3>
+        <div class="info-row">
+            <span class="info-label">Radius</span>
+            <span class="info-value" id="planet-radius">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Distance</span>
+            <span class="info-value" id="planet-distance">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Period</span>
+            <span class="info-value" id="planet-period">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Inclination</span>
+            <span class="info-value" id="planet-inclination">—</span>
+        </div>
+        <div class="info-hint" id="planet-lock-hint">DOUBLE-CLICK to lock camera</div>
+        <div class="info-hint">ESC to return to overview</div>
+    </div>
+
+    <!-- ── Controls hint ── -->
+    <div id="controls-hint" class="controls-hint">
+        1–8: select planet &nbsp;·&nbsp; ESC: overview &nbsp;·&nbsp; DOUBLE-CLICK: lock camera
+    </div>
+
     <!-- ── Splash / loading screen ── -->
     <div id="loading">
         <div class="splash">

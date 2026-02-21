@@ -1,4 +1,4 @@
-//! Input handling — mouse, touch, and scroll event binding.
+//! Input handling — mouse, touch, keyboard, and planet-selection events.
 //!
 //! All closures capture an `Rc<RefCell<AppState>>` and mutate the camera
 //! or input-tracking fields. Closures are leaked intentionally because
@@ -10,7 +10,12 @@ use wasm_bindgen::prelude::*;
 use web_sys::HtmlCanvasElement;
 
 use crate::app::AppState;
-use crate::constants::{DEFAULT_DAYS_PER_SECOND, TOUCH_ZOOM_MULTIPLIER};
+use crate::constants::{
+    CAMERA_DISTANCE, DEFAULT_DAYS_PER_SECOND, PLANET_CLICK_RADIUS_FACTOR, PLANET_ZOOM_FACTOR,
+    TOUCH_ZOOM_MULTIPLIER,
+};
+use crate::renderer::camera::Camera;
+use glam::Vec3;
 
 /// Attach all input event listeners to the given canvas.
 ///
@@ -21,6 +26,186 @@ pub fn setup_input(canvas: &HtmlCanvasElement, state: Rc<RefCell<AppState>>) {
     bind_wheel_event(canvas, &state);
     bind_touch_events(canvas, &state);
     bind_keyboard_events(&state);
+}
+
+// ── Planet selection helpers ─────────────────────────────────────────────
+
+/// Cast a ray from the camera through `(mouse_x, mouse_y)` (in CSS pixels,
+/// relative to the canvas) and return the index of the nearest body hit, if any.
+fn raycast_planets(
+    camera: &Camera,
+    body_positions: &[(Vec3, f32)], // (position, display_radius)
+    mouse_x: f32,
+    mouse_y: f32,
+    canvas_w: f32,
+    canvas_h: f32,
+) -> Option<usize> {
+    if canvas_w == 0.0 || canvas_h == 0.0 {
+        return None;
+    }
+    let ndc_x = (2.0 * mouse_x / canvas_w) - 1.0;
+    let ndc_y = 1.0 - (2.0 * mouse_y / canvas_h);
+
+    // Unproject through the combined view-projection matrix.
+    let vp = camera.projection_matrix() * camera.view_matrix();
+    let inv_vp = vp.inverse();
+
+    let near_clip = glam::Vec4::new(ndc_x, ndc_y, -1.0, 1.0);
+    let far_clip = glam::Vec4::new(ndc_x, ndc_y, 1.0, 1.0);
+
+    let near_w = inv_vp * near_clip;
+    let far_w = inv_vp * far_clip;
+
+    let near_pos = near_w.truncate() / near_w.w;
+    let far_pos = far_w.truncate() / far_w.w;
+
+    let ray_origin = near_pos;
+    let ray_dir = (far_pos - near_pos).normalize();
+
+    let mut nearest: Option<(usize, f32)> = None;
+
+    for (i, (center, display_radius)) in body_positions.iter().enumerate() {
+        let radius = display_radius * PLANET_CLICK_RADIUS_FACTOR;
+        let oc = ray_origin - *center;
+        let b = oc.dot(ray_dir);
+        let c = oc.dot(oc) - radius * radius;
+        let discriminant = b * b - c;
+
+        if discriminant >= 0.0 {
+            let t = -b - discriminant.sqrt();
+            let t = if t > 0.0 { t } else { -b + discriminant.sqrt() };
+            if t > 0.0 && nearest.map_or(true, |(_, d)| t < d) {
+                nearest = Some((i, t));
+            }
+        }
+    }
+
+    nearest.map(|(i, _)| i)
+}
+
+/// Select a celestial body by index: animate the camera toward it and update
+/// the info panel.  Does nothing if `idx` is already selected.
+fn select_planet(state: &mut AppState, idx: usize) {
+    if state.selected_planet == Some(idx) {
+        return;
+    }
+    if idx >= state.simulation.bodies.len() {
+        return;
+    }
+
+    // Extract all data we need before mutating (avoids split-borrow issues).
+    let (name, radius_km, dist_au, period_days, incl_rad, is_star, display_r, body_pos) = {
+        let b = &state.simulation.bodies[idx];
+        (
+            b.name,
+            b.real_radius_km,
+            b.semi_major_axis_au,
+            b.orbital_period_days,
+            b.inclination_rad,
+            b.is_star,
+            b.display_radius,
+            b.position,
+        )
+    };
+
+    let zoom_dist = (display_r * PLANET_ZOOM_FACTOR)
+        .max(state.renderer.camera.min_distance * 1.5);
+    state.renderer.camera.set_target(body_pos, zoom_dist);
+
+    // Changing selection clears any existing camera lock.
+    state.camera_locked = false;
+    state.selected_planet = Some(idx);
+
+    show_planet_panel(name, radius_km, dist_au, period_days, incl_rad, is_star, false);
+}
+
+/// Deselect the current body and return the camera to the overview.
+fn deselect_all(state: &mut AppState) {
+    state.selected_planet = None;
+    state.camera_locked = false;
+    state.renderer.camera.set_target(Vec3::ZERO, CAMERA_DISTANCE);
+    hide_planet_panel();
+}
+
+/// Toggle the camera-lock on the currently selected planet.
+fn toggle_camera_lock(state: &mut AppState) {
+    if state.selected_planet.is_none() {
+        return;
+    }
+    state.camera_locked = !state.camera_locked;
+    update_planet_panel_lock(state.camera_locked);
+}
+
+// ── DOM helpers ──────────────────────────────────────────────────────────
+
+fn show_planet_panel(
+    name: &str,
+    radius_km: f64,
+    dist_au: f64,
+    period_days: f64,
+    inclination_rad: f64,
+    is_star: bool,
+    locked: bool,
+) {
+    let Some(doc) = web_sys::window().and_then(|w| w.document()) else {
+        return;
+    };
+
+    let set = |id: &str, html: &str| {
+        if let Some(el) = doc.get_element_by_id(id) {
+            el.set_inner_html(html);
+        }
+    };
+
+    set("planet-name", name);
+    set("planet-radius", &format!("{radius_km:.0} km"));
+
+    if is_star {
+        set("planet-distance", "Center of system");
+        set("planet-period", "—");
+    } else {
+        set("planet-distance", &format!("{dist_au:.3} AU"));
+        set("planet-period", &format!("{period_days:.1} days"));
+    }
+
+    set(
+        "planet-inclination",
+        &format!("{:.2}°", inclination_rad.to_degrees()),
+    );
+    set(
+        "planet-lock-hint",
+        if locked {
+            "🔒 Locked · DOUBLE-CLICK to unlock"
+        } else {
+            "DOUBLE-CLICK to lock camera"
+        },
+    );
+
+    if let Some(panel) = doc.get_element_by_id("planet-info") {
+        let _ = panel.class_list().remove_1("hidden");
+    }
+}
+
+fn hide_planet_panel() {
+    if let Some(panel) = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.get_element_by_id("planet-info"))
+    {
+        let _ = panel.class_list().add_1("hidden");
+    }
+}
+
+fn update_planet_panel_lock(locked: bool) {
+    if let Some(el) = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.get_element_by_id("planet-lock-hint"))
+    {
+        el.set_inner_html(if locked {
+            "🔒 Locked · DOUBLE-CLICK to unlock"
+        } else {
+            "DOUBLE-CLICK to lock camera"
+        });
+    }
 }
 
 // ── Mouse ────────────────────────────────────────────────────────────────
@@ -69,6 +254,76 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
         canvas
             .add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())
             .expect("Failed to bind mousemove listener");
+        closure.forget();
+    }
+
+    // Click — raycasting to select a planet
+    {
+        let state = Rc::clone(state);
+        let canvas_click = canvas.clone();
+        let closure = Closure::wrap(Box::new(move |e: web_sys::MouseEvent| {
+            let mut s = state.borrow_mut();
+            let x = e.offset_x() as f32;
+            let y = e.offset_y() as f32;
+            let w = canvas_click.client_width() as f32;
+            let h = canvas_click.client_height() as f32;
+
+            // Snapshot body positions to avoid a split-borrow on `s`.
+            let body_data: Vec<(Vec3, f32)> = s
+                .simulation
+                .bodies
+                .iter()
+                .map(|b| (b.position, b.display_radius))
+                .collect();
+
+            let hit = raycast_planets(&s.renderer.camera, &body_data, x, y, w, h);
+
+            match hit {
+                Some(idx) => select_planet(&mut s, idx),
+                None => deselect_all(&mut s),
+            }
+        }) as Box<dyn FnMut(web_sys::MouseEvent)>);
+        canvas
+            .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())
+            .expect("Failed to bind click listener");
+        closure.forget();
+    }
+
+    // Double-click — toggle camera lock on selected planet
+    {
+        let state = Rc::clone(state);
+        let canvas_dbl = canvas.clone();
+        let closure = Closure::wrap(Box::new(move |e: web_sys::MouseEvent| {
+            let mut s = state.borrow_mut();
+
+            if s.selected_planet.is_some() {
+                // Toggle lock on the already-selected planet.
+                toggle_camera_lock(&mut s);
+            } else {
+                // Nothing selected yet — try to select and immediately lock.
+                let x = e.offset_x() as f32;
+                let y = e.offset_y() as f32;
+                let w = canvas_dbl.client_width() as f32;
+                let h = canvas_dbl.client_height() as f32;
+
+                let body_data: Vec<(Vec3, f32)> = s
+                    .simulation
+                    .bodies
+                    .iter()
+                    .map(|b| (b.position, b.display_radius))
+                    .collect();
+
+                if let Some(idx) =
+                    raycast_planets(&s.renderer.camera, &body_data, x, y, w, h)
+                {
+                    select_planet(&mut s, idx);
+                    toggle_camera_lock(&mut s);
+                }
+            }
+        }) as Box<dyn FnMut(web_sys::MouseEvent)>);
+        canvas
+            .add_event_listener_with_callback("dblclick", closure.as_ref().unchecked_ref())
+            .expect("Failed to bind dblclick listener");
         closure.forget();
     }
 }
@@ -208,6 +463,22 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
                     .time
                     .set_speed(DEFAULT_DAYS_PER_SECOND);
             }
+            // Escape → deselect planet, return to overview
+            "Escape" => {
+                e.prevent_default();
+                deselect_all(&mut state.borrow_mut());
+            }
+            // 1–8 → select Mercury through Neptune directly.
+            // This relies on the fixed body ordering in data::solar_system:
+            // index 0 = Sun, 1 = Mercury, …, 8 = Neptune.
+            "1" => select_planet(&mut state.borrow_mut(), 1),
+            "2" => select_planet(&mut state.borrow_mut(), 2),
+            "3" => select_planet(&mut state.borrow_mut(), 3),
+            "4" => select_planet(&mut state.borrow_mut(), 4),
+            "5" => select_planet(&mut state.borrow_mut(), 5),
+            "6" => select_planet(&mut state.borrow_mut(), 6),
+            "7" => select_planet(&mut state.borrow_mut(), 7),
+            "8" => select_planet(&mut state.borrow_mut(), 8),
             _ => {}
         }
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);

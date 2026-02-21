@@ -81,6 +81,17 @@ pub const PHI_CLAMP: f32 = 1.4;
 /// Touch pinch zoom multiplier.
 pub const TOUCH_ZOOM_MULTIPLIER: f32 = 2.0;
 
+// ─── Planet selection / camera focus ────────────────────────────────────
+
+/// Speed factor for smooth camera-target transition (higher = faster convergence).
+pub const CAMERA_LERP_SPEED: f32 = 4.0;
+
+/// Multiplier applied to `display_radius` to compute ray-click hit radius.
+pub const PLANET_CLICK_RADIUS_FACTOR: f32 = 2.5;
+
+/// Multiplier applied to `display_radius` to compute auto-zoom distance.
+pub const PLANET_ZOOM_FACTOR: f32 = 12.0;
+
 // ─── Simulation defaults ────────────────────────────────────────────────
 
 /// Default simulation speed: Earth-days per real second.
