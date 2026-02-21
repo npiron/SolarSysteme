@@ -1,0 +1,16 @@
+# Rust
+/target/
+Cargo.lock
+
+# WASM build output
+/pkg/
+
+# Node.js
+node_modules/
+
+# Vite build output
+/dist/
+
+# OS
+.DS_Store
+Thumbs.db
