@@ -6,9 +6,9 @@
   "scripts": {
     "build:wasm": "wasm-pack build --target web --release",
     "build:wasm:dev": "wasm-pack build --target web --dev",
-    "dev": "npm run build:wasm:dev && vite www --open",
-    "build": "npm run build:wasm && vite build www && cp -r www/textures www/dist/textures",
-    "preview": "vite preview www"
+    "dev": "npm run build:wasm:dev && vite www --open --config vite.config.js",
+    "build": "npm run build:wasm && vite build www --config vite.config.js && cp -r www/textures www/dist/textures",
+    "preview": "vite preview www --config vite.config.js"
   },
   "devDependencies": {
     "vite": "^6.0.0",
