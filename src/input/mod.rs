@@ -233,6 +233,10 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
             "h" | "H" => {
                 crate::hud::toggle();
             }
+            // H → toggle HUD visibility
+            "h" | "H" => {
+                crate::hud::toggle();
+            }
             _ => {}
         }
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
