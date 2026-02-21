@@ -84,12 +84,27 @@ window.solaraUpdateHud = function (days, speed, paused, fps) {
     if (fpsEl) {
         fpsEl.textContent = Math.round(_hudFpsEma) + ' FPS';
     }
+
+    // Sync pause button icon
+    const pauseBtn = document.getElementById('hud-pause');
+    if (pauseBtn) pauseBtn.textContent = paused ? '▶' : '⏸';
 };
 
 window.solaraToggleHud = function () {
     const hud = document.getElementById('hud');
     if (hud) hud.classList.toggle('hidden');
 };
+
+// ── Speed control buttons → keyboard event bridge ────────────────────────
+
+function dispatchKey(key) {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+}
+
+document.getElementById('hud-pause')?.addEventListener('click', () => dispatchKey(' '));
+document.getElementById('hud-slower')?.addEventListener('click', () => dispatchKey('-'));
+document.getElementById('hud-faster')?.addEventListener('click', () => dispatchKey('+'));
+document.getElementById('hud-reset')?.addEventListener('click', () => dispatchKey('R'));
 
 // ── Debounced resize ─────────────────────────────────────────────────────
 

@@ -192,7 +192,7 @@ html, body {
     to   { transform: rotate(360deg); }
 }
 
-/* ── HUD overlay ── */
+/* ── Telemetry HUD overlay (top-left) ── */
 #hud {
     position: fixed;
     top: 1rem;
@@ -247,4 +247,44 @@ html, body {
     .hud-label {
         font-size: 0.6rem;
     }
+}
+
+/* ── Speed / pause controls (bottom-center) ── */
+#hud-controls {
+    position: fixed;
+    bottom: 1.4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(10, 10, 26, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 2rem;
+    padding: 0.45rem 0.9rem;
+    z-index: 10;
+    user-select: none;
+}
+
+.hud-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem 0.45rem;
+    border-radius: 50%;
+    transition: color 0.15s, background 0.15s;
+}
+
+.hud-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.hud-btn:active {
+    background: rgba(255, 255, 255, 0.22);
 }

@@ -11,7 +11,7 @@
 <body>
     <canvas id="solara-canvas"></canvas>
 
-    <!-- ── HUD overlay ── -->
+    <!-- ── Telemetry HUD (top-left) ── -->
     <div id="hud" aria-label="Simulation telemetry">
         <div class="hud-row">
             <span class="hud-label">Date</span>
@@ -29,6 +29,14 @@
             <span class="hud-label">FPS</span>
             <span class="hud-value" id="hud-fps">—</span>
         </div>
+    </div>
+
+    <!-- ── Speed / pause controls (bottom-center) ── -->
+    <div id="hud-controls">
+        <button id="hud-slower" class="hud-btn" title="Slower (− / ↓)">−</button>
+        <button id="hud-pause" class="hud-btn" title="Pause / Resume (Space)">⏸</button>
+        <button id="hud-faster" class="hud-btn" title="Faster (+ / ↑)">+</button>
+        <button id="hud-reset" class="hud-btn" title="Reset speed (R)">↺</button>
     </div>
 
     <!-- ── Splash / loading screen ── -->

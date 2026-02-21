@@ -184,29 +184,54 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
             // Space → toggle pause
             " " => {
                 e.prevent_default();
-                state.borrow_mut().simulation.time.toggle_pause();
+                let mut s = state.borrow_mut();
+                s.simulation.time.toggle_pause();
+                crate::hud::update(
+                    s.simulation.time.current_days,
+                    s.simulation.time.days_per_second,
+                    s.simulation.time.paused,
+                    0.0,
+                );
             }
-            // Arrow Up → double speed
-            "ArrowUp" => {
+            // Arrow Up / + → speed up
+            "ArrowUp" | "+" => {
                 e.prevent_default();
                 let mut s = state.borrow_mut();
-                let spd = s.simulation.time.days_per_second;
-                s.simulation.time.set_speed(spd * 2.0);
+                s.simulation.time.speed_up();
+                crate::hud::update(
+                    s.simulation.time.current_days,
+                    s.simulation.time.days_per_second,
+                    s.simulation.time.paused,
+                    0.0,
+                );
             }
-            // Arrow Down → halve speed
-            "ArrowDown" => {
+            // Arrow Down / - → slow down
+            "ArrowDown" | "-" => {
                 e.prevent_default();
                 let mut s = state.borrow_mut();
-                let spd = s.simulation.time.days_per_second;
-                s.simulation.time.set_speed((spd * 0.5).max(0.125));
+                s.simulation.time.speed_down();
+                crate::hud::update(
+                    s.simulation.time.current_days,
+                    s.simulation.time.days_per_second,
+                    s.simulation.time.paused,
+                    0.0,
+                );
             }
             // R → reset speed to default
             "r" | "R" => {
-                state
-                    .borrow_mut()
-                    .simulation
-                    .time
-                    .set_speed(DEFAULT_DAYS_PER_SECOND);
+                let mut s = state.borrow_mut();
+                s.simulation.time.set_speed(DEFAULT_DAYS_PER_SECOND);
+                s.simulation.time.paused = false;
+                crate::hud::update(
+                    s.simulation.time.current_days,
+                    s.simulation.time.days_per_second,
+                    s.simulation.time.paused,
+                    0.0,
+                );
+            }
+            // H → toggle HUD visibility
+            "h" | "H" => {
+                crate::hud::toggle();
             }
             // H → toggle HUD visibility
             "h" | "H" => {

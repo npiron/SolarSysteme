@@ -244,7 +244,51 @@ mod tests {
     fn simulation_speed_cannot_be_negative() {
         let mut time = SimulationTime::new();
         time.set_speed(-5.0);
-        assert_eq!(time.days_per_second, 0.0);
+        assert_eq!(time.days_per_second, 0.1, "Speed should clamp to minimum step");
+    }
+
+    #[test]
+    fn simulation_speed_up_cycles_steps() {
+        let mut time = SimulationTime::new(); // starts at 1.0
+        time.speed_up();
+        assert_eq!(time.days_per_second, 2.0);
+        time.speed_up();
+        assert_eq!(time.days_per_second, 5.0);
+    }
+
+    #[test]
+    fn simulation_speed_down_cycles_steps() {
+        let mut time = SimulationTime::new(); // starts at 1.0
+        time.speed_down();
+        assert_eq!(time.days_per_second, 0.5);
+        time.speed_down();
+        assert_eq!(time.days_per_second, 0.1);
+    }
+
+    #[test]
+    fn simulation_speed_up_clamps_at_max() {
+        let mut time = SimulationTime::new();
+        time.set_speed(100.0);
+        time.speed_up(); // already at max, should stay
+        assert_eq!(time.days_per_second, 100.0);
+    }
+
+    #[test]
+    fn simulation_speed_down_clamps_at_min() {
+        let mut time = SimulationTime::new();
+        time.set_speed(0.1);
+        time.speed_down(); // already at min, should stay
+        assert_eq!(time.days_per_second, 0.1);
+    }
+
+    #[test]
+    fn simulation_speed_label() {
+        let mut time = SimulationTime::new();
+        assert_eq!(time.speed_label(), "×1");
+        time.set_speed(10.0);
+        assert_eq!(time.speed_label(), "×10");
+        time.set_speed(0.5);
+        assert_eq!(time.speed_label(), "×0.5");
     }
 
     #[test]
