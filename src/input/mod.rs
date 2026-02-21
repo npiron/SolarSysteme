@@ -12,17 +12,6 @@ use web_sys::HtmlCanvasElement;
 use crate::app::AppState;
 use crate::constants::{DEFAULT_DAYS_PER_SECOND, TOUCH_ZOOM_MULTIPLIER};
 
-// ── HUD bridge ───────────────────────────────────────────────────────────
-
-#[wasm_bindgen(inline_js = "
-    export function hud_update(speed, paused) {
-        if (window.solaraUpdateHud) window.solaraUpdateHud(speed, paused);
-    }
-")]
-extern "C" {
-    fn hud_update(speed: f64, paused: bool);
-}
-
 /// Attach all input event listeners to the given canvas.
 ///
 /// Every closure is `.forget()`-ed so it lives as long as the page.
@@ -197,28 +186,52 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
                 e.prevent_default();
                 let mut s = state.borrow_mut();
                 s.simulation.time.toggle_pause();
-                hud_update(s.simulation.time.days_per_second, s.simulation.time.paused);
+                crate::hud::update(
+                    s.simulation.time.current_days,
+                    s.simulation.time.days_per_second,
+                    s.simulation.time.paused,
+                    0.0,
+                );
             }
             // Arrow Up / + → speed up
             "ArrowUp" | "+" => {
                 e.prevent_default();
                 let mut s = state.borrow_mut();
                 s.simulation.time.speed_up();
-                hud_update(s.simulation.time.days_per_second, s.simulation.time.paused);
+                crate::hud::update(
+                    s.simulation.time.current_days,
+                    s.simulation.time.days_per_second,
+                    s.simulation.time.paused,
+                    0.0,
+                );
             }
             // Arrow Down / - → slow down
             "ArrowDown" | "-" => {
                 e.prevent_default();
                 let mut s = state.borrow_mut();
                 s.simulation.time.speed_down();
-                hud_update(s.simulation.time.days_per_second, s.simulation.time.paused);
+                crate::hud::update(
+                    s.simulation.time.current_days,
+                    s.simulation.time.days_per_second,
+                    s.simulation.time.paused,
+                    0.0,
+                );
             }
             // R → reset speed to default
             "r" | "R" => {
                 let mut s = state.borrow_mut();
                 s.simulation.time.set_speed(DEFAULT_DAYS_PER_SECOND);
                 s.simulation.time.paused = false;
-                hud_update(s.simulation.time.days_per_second, s.simulation.time.paused);
+                crate::hud::update(
+                    s.simulation.time.current_days,
+                    s.simulation.time.days_per_second,
+                    s.simulation.time.paused,
+                    0.0,
+                );
+            }
+            // H → toggle HUD visibility
+            "h" | "H" => {
+                crate::hud::toggle();
             }
             _ => {}
         }

@@ -50,20 +50,52 @@ window.solaraHideSplash = function () {
     }, 400);
 };
 
-// ── HUD update callback (called from Rust after each speed / pause change) ──
+// ── HUD helpers (called from Rust via wasm-bindgen) ──────────────────────
 
-window.solaraUpdateHud = function (speed, paused) {
-    const pauseBtn = document.getElementById('hud-pause');
-    const speedEl  = document.getElementById('hud-speed');
-    if (pauseBtn) pauseBtn.textContent = paused ? '▶' : '⏸';
-    if (speedEl) {
-        speedEl.textContent = speed < 1
-            ? '×' + speed.toFixed(1)
-            : '×' + Math.round(speed);
+const MS_PER_DAY = 86400000;
+let _hudFpsEma = 60;
+
+window.solaraUpdateHud = function (days, speed, paused, fps) {
+    // Exponential moving average for smooth FPS display
+    _hudFpsEma = _hudFpsEma * 0.9 + fps * 0.1;
+
+    // Convert J2000 days (Jan 1.5 2000 = 2000-01-01T12:00Z) to a calendar date
+    const j2000Ms = Date.UTC(2000, 0, 1, 12, 0, 0);
+    const simDate  = new Date(j2000Ms + days * MS_PER_DAY);
+
+    const dateEl  = document.getElementById('hud-date');
+    const speedEl = document.getElementById('hud-speed');
+    const fpsEl   = document.getElementById('hud-fps');
+
+    if (dateEl) {
+        dateEl.textContent = simDate.toLocaleDateString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
     }
+    if (speedEl) {
+        if (paused) {
+            speedEl.textContent = 'Paused';
+        } else if (speed >= 365.25) {
+            speedEl.textContent = '\u00d7' + (speed / 365.25).toFixed(1) + ' yr/s';
+        } else {
+            speedEl.textContent = '\u00d7' + speed.toFixed(1) + ' d/s';
+        }
+    }
+    if (fpsEl) {
+        fpsEl.textContent = Math.round(_hudFpsEma) + ' FPS';
+    }
+
+    // Sync pause button icon
+    const pauseBtn = document.getElementById('hud-pause');
+    if (pauseBtn) pauseBtn.textContent = paused ? '▶' : '⏸';
 };
 
-// ── HUD button → keyboard event bridge ──────────────────────────────────
+window.solaraToggleHud = function () {
+    const hud = document.getElementById('hud');
+    if (hud) hud.classList.toggle('hidden');
+};
+
+// ── Speed control buttons → keyboard event bridge ────────────────────────
 
 function dispatchKey(key) {
     document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));

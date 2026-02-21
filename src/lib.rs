@@ -17,6 +17,7 @@
 mod app;
 mod constants;
 mod data;
+mod hud;
 mod input;
 mod renderer;
 mod simulation;
