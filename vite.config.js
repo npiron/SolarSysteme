@@ -13,7 +13,7 @@ export default defineConfig({
         open: false,
     },
     build: {
-        outDir: '../dist',
+        outDir: 'dist',
         emptyOutDir: true,
     },
     resolve: {
