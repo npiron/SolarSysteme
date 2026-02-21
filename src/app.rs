@@ -43,6 +43,13 @@ impl AppState {
     /// the body list every frame.
     pub fn tick(&mut self, dt: f64) {
         self.simulation.update(dt);
+        let fps = if dt > 0.0 { (1.0 / dt).min(1000.0) as f32 } else { 0.0 };
+        crate::hud::update(
+            self.simulation.time.current_days,
+            self.simulation.time.days_per_second,
+            self.simulation.time.paused,
+            fps,
+        );
         self.renderer.render(&self.simulation.bodies, dt as f32);
     }
 }

@@ -208,6 +208,10 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
                     .time
                     .set_speed(DEFAULT_DAYS_PER_SECOND);
             }
+            // H → toggle HUD visibility
+            "h" | "H" => {
+                crate::hud::toggle();
+            }
             _ => {}
         }
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
