@@ -61,8 +61,9 @@ impl CelestialBody {
         )
     }
 
-    /// Update the body's position for the current simulation time.
-    pub fn update(&mut self, time_days: f64) {
-        self.position = self.position_at(time_days);
+    /// Update the body's position for the current simulation time,
+    /// including the cumulative galactic drift offset.
+    pub fn update(&mut self, time_days: f64, galactic_offset: glam::Vec3) {
+        self.position = self.position_at(time_days) + galactic_offset;
     }
 }
