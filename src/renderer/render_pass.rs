@@ -139,6 +139,16 @@ impl RenderPass for OrbitPass {
         s.set_mat4(gl, "u_view", &ctx.view);
         s.set_mat4(gl, "u_projection", &ctx.projection);
 
+        // Orbits are centred on the Sun — translate them by its current position
+        // so they follow the galactic drift.
+        let sun_pos = bodies
+            .iter()
+            .find(|b| b.is_star)
+            .map(|b| b.position)
+            .unwrap_or(Vec3::ZERO);
+        let model = Mat4::from_translation(sun_pos);
+        s.set_mat4(gl, "u_model", &model);
+
         let planets: Vec<&CelestialBody> = bodies.iter().filter(|b| !b.is_star).collect();
         for (i, planet) in planets.iter().enumerate() {
             if let Some((vao, count)) = self.vaos.get(i) {

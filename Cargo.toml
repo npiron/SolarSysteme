@@ -44,6 +44,7 @@ features = [
     "WebGlTexture",
     "HtmlImageElement",
     "Event",
+    "DomTokenList",
 ]
 
 [dev-dependencies]

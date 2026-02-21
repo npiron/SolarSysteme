@@ -98,6 +98,17 @@ pub const GALACTIC_PERIOD_YEARS: f64 = 230_000_000.0;
 /// or increase it to exaggerate the galactic motion for demonstration purposes.
 pub const GALACTIC_SPEED_DISPLAY: f32 = 5.086;
 
+// ─── Planet selection / camera focus ────────────────────────────────────
+
+/// Speed factor for smooth camera-target transition (higher = faster convergence).
+pub const CAMERA_LERP_SPEED: f32 = 4.0;
+
+/// Multiplier applied to `display_radius` to compute ray-click hit radius.
+pub const PLANET_CLICK_RADIUS_FACTOR: f32 = 2.5;
+
+/// Multiplier applied to `display_radius` to compute auto-zoom distance.
+pub const PLANET_ZOOM_FACTOR: f32 = 12.0;
+
 // ─── Simulation defaults ────────────────────────────────────────────────
 
 /// Default simulation speed: Earth-days per real second.

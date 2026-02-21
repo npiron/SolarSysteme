@@ -26,6 +26,10 @@ pub struct Camera {
     pub fov: f32,
     /// Viewport aspect ratio (width / height).
     pub aspect: f32,
+    /// Desired target for smooth transition (`None` when no animation is active).
+    pub lerp_target: Option<Vec3>,
+    /// Desired orbit distance for smooth transition (`None` when no animation is active).
+    pub lerp_distance: Option<f32>,
 }
 
 impl Camera {
@@ -39,6 +43,8 @@ impl Camera {
             max_distance: CAMERA_MAX_DISTANCE,
             fov: CAMERA_FOV_DEGREES.to_radians(),
             aspect,
+            lerp_target: None,
+            lerp_distance: None,
         }
     }
 
@@ -76,5 +82,34 @@ impl Camera {
     /// Update aspect ratio (on canvas resize).
     pub fn set_aspect(&mut self, aspect: f32) {
         self.aspect = aspect;
+    }
+
+    /// Begin a smooth camera transition to a new `target` point and orbit `distance`.
+    pub fn set_target(&mut self, target: Vec3, distance: f32) {
+        self.lerp_target = Some(target);
+        self.lerp_distance = Some(distance.clamp(self.min_distance, self.max_distance));
+    }
+
+    /// Advance any active camera-transition animations.
+    ///
+    /// Call once per frame with the real elapsed time in seconds.
+    pub fn update_transition(&mut self, dt: f32) {
+        let alpha = (dt * CAMERA_LERP_SPEED).min(1.0);
+
+        if let Some(tgt) = self.lerp_target {
+            self.target = self.target.lerp(tgt, alpha);
+            if self.target.distance(tgt) < 0.01 {
+                self.target = tgt;
+                self.lerp_target = None;
+            }
+        }
+
+        if let Some(dist) = self.lerp_distance {
+            self.distance += (dist - self.distance) * alpha;
+            if (self.distance - dist).abs() < 0.01 {
+                self.distance = dist;
+                self.lerp_distance = None;
+            }
+        }
     }
 }

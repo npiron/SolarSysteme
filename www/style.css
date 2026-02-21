@@ -288,3 +288,84 @@ html, body {
 .hud-btn:active {
     background: rgba(255, 255, 255, 0.22);
 }
+
+/* ── Planet info panel ── */
+.planet-info {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    min-width: 220px;
+    background: rgba(8, 8, 24, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    padding: 1rem 1.2rem 0.9rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.planet-info.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(1rem);
+}
+
+.planet-info h3 {
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: 0.06rem;
+    color: rgba(255, 200, 60, 0.95);
+    margin-bottom: 0.75rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.22rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.info-row:last-of-type {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.40);
+    letter-spacing: 0.04rem;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.info-value {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    text-align: right;
+}
+
+.info-hint {
+    margin-top: 0.6rem;
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.28);
+    text-align: center;
+    letter-spacing: 0.03rem;
+}
+
+/* ── Controls hint ── */
+.controls-hint {
+    position: fixed;
+    bottom: 1.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.70rem;
+    color: rgba(255, 255, 255, 0.22);
+    letter-spacing: 0.04rem;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 10;
+}
