@@ -11,6 +11,26 @@
 <body>
     <canvas id="solara-canvas"></canvas>
 
+    <!-- ── HUD overlay ── -->
+    <div id="hud" aria-label="Simulation telemetry">
+        <div class="hud-row">
+            <span class="hud-label">Date</span>
+            <span class="hud-value" id="hud-date">—</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">Speed</span>
+            <span class="hud-value" id="hud-speed">—</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">Frame</span>
+            <span class="hud-value">Heliocentric</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">FPS</span>
+            <span class="hud-value" id="hud-fps">—</span>
+        </div>
+    </div>
+
     <!-- ── Splash / loading screen ── -->
     <div id="loading">
         <div class="splash">
