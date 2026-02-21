@@ -27,7 +27,7 @@ pub struct FrameContext<'a> {
 /// Implement this trait to add new visual layers (e.g. asteroid belts,
 /// labels, trails) without touching existing rendering code.
 pub trait RenderPass {
-    fn draw(&self, ctx: &FrameContext, bodies: &[CelestialBody]);
+    fn draw(&mut self, ctx: &FrameContext, bodies: &[CelestialBody]);
 }
 
 // ─── Planet pass ─────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ pub struct PlanetPass {
 }
 
 impl RenderPass for PlanetPass {
-    fn draw(&self, ctx: &FrameContext, bodies: &[CelestialBody]) {
+    fn draw(&mut self, ctx: &FrameContext, bodies: &[CelestialBody]) {
         let gl = ctx.gl;
         let s = &self.shader;
         s.activate(gl);
@@ -94,7 +94,7 @@ pub struct RingPass {
 }
 
 impl RenderPass for RingPass {
-    fn draw(&self, ctx: &FrameContext, bodies: &[CelestialBody]) {
+    fn draw(&mut self, ctx: &FrameContext, bodies: &[CelestialBody]) {
         let gl = ctx.gl;
         let s = &self.shader;
         s.activate(gl);
@@ -131,7 +131,7 @@ pub struct OrbitPass {
 }
 
 impl RenderPass for OrbitPass {
-    fn draw(&self, ctx: &FrameContext, bodies: &[CelestialBody]) {
+    fn draw(&mut self, ctx: &FrameContext, bodies: &[CelestialBody]) {
         let gl = ctx.gl;
         let s = &self.shader;
         s.activate(gl);
@@ -170,7 +170,7 @@ pub struct StarfieldPass {
 }
 
 impl RenderPass for StarfieldPass {
-    fn draw(&self, ctx: &FrameContext, bodies: &[CelestialBody]) {
+    fn draw(&mut self, ctx: &FrameContext, bodies: &[CelestialBody]) {
         let _ = bodies; // starfield is independent of bodies
         let gl = ctx.gl;
         let s = &self.shader;
@@ -194,5 +194,110 @@ impl RenderPass for StarfieldPass {
         gl.bind_vertex_array(None);
 
         gl.depth_mask(true);
+    }
+}
+
+// ─── Trail pass ──────────────────────────────────────────────────────────
+
+use std::collections::VecDeque;
+use crate::constants::TRAIL_MAX_POINTS;
+
+/// Per-planet trail data: a ring buffer of past positions + a GPU buffer.
+pub struct TrailBuffer {
+    pub positions: VecDeque<Vec3>,
+    pub vao: web_sys::WebGlVertexArrayObject,
+    pub vbo_pos: web_sys::WebGlBuffer,
+    pub vbo_alpha: web_sys::WebGlBuffer,
+}
+
+pub struct TrailPass {
+    pub shader: ShaderProgram,
+    /// One trail buffer per non-star body (same order as `bodies` filtered by `!is_star`).
+    pub trails: Vec<TrailBuffer>,
+}
+
+impl TrailPass {
+    /// Update trail buffers with current planet positions, then upload to GPU.
+    fn update_trails(&mut self, gl: &GL, bodies: &[CelestialBody]) {
+        let planets: Vec<&CelestialBody> = bodies.iter().filter(|b| !b.is_star).collect();
+
+        for (i, planet) in planets.iter().enumerate() {
+            if let Some(trail) = self.trails.get_mut(i) {
+                // Push new position
+                trail.positions.push_back(planet.position);
+                if trail.positions.len() > TRAIL_MAX_POINTS {
+                    trail.positions.pop_front();
+                }
+
+                let len = trail.positions.len();
+                if len < 2 {
+                    continue;
+                }
+
+                // Build interleaved position data  (x, y, z per point)
+                let pos_data: Vec<f32> = trail
+                    .positions
+                    .iter()
+                    .flat_map(|p| [p.x, p.y, p.z])
+                    .collect();
+
+                // Build alpha data (0.0 at oldest → 1.0 at newest)
+                let alpha_data: Vec<f32> = (0..len)
+                    .map(|j| j as f32 / (len - 1) as f32)
+                    .collect();
+
+                // Upload positions
+                gl.bind_buffer(GL::ARRAY_BUFFER, Some(&trail.vbo_pos));
+                unsafe {
+                    let array = js_sys::Float32Array::view(&pos_data);
+                    gl.buffer_sub_data_with_i32_and_array_buffer_view(
+                        GL::ARRAY_BUFFER,
+                        0,
+                        &array,
+                    );
+                }
+
+                // Upload alphas
+                gl.bind_buffer(GL::ARRAY_BUFFER, Some(&trail.vbo_alpha));
+                unsafe {
+                    let array = js_sys::Float32Array::view(&alpha_data);
+                    gl.buffer_sub_data_with_i32_and_array_buffer_view(
+                        GL::ARRAY_BUFFER,
+                        0,
+                        &array,
+                    );
+                }
+            }
+        }
+    }
+}
+
+impl RenderPass for TrailPass {
+    fn draw(&mut self, ctx: &FrameContext, bodies: &[CelestialBody]) {
+        let gl = ctx.gl;
+
+        // Update trail data on CPU & GPU
+        self.update_trails(gl, bodies);
+
+        let s = &self.shader;
+        s.activate(gl);
+
+        s.set_mat4(gl, "u_view", &ctx.view);
+        s.set_mat4(gl, "u_projection", &ctx.projection);
+
+        let planets: Vec<&CelestialBody> = bodies.iter().filter(|b| !b.is_star).collect();
+
+        for (i, planet) in planets.iter().enumerate() {
+            if let Some(trail) = self.trails.get(i) {
+                let len = trail.positions.len();
+                if len < 2 {
+                    continue;
+                }
+                s.set_vec3(gl, "u_color", &planet.color);
+                gl.bind_vertex_array(Some(&trail.vao));
+                gl.draw_arrays(GL::LINE_STRIP, 0, len as i32);
+                gl.bind_vertex_array(None);
+            }
+        }
     }
 }

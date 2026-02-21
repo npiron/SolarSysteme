@@ -200,3 +200,44 @@ pub fn create_line_vao(gl: &GL, points: &[Vec3]) -> Result<web_sys::WebGlVertexA
     gl.bind_vertex_array(None);
     Ok(vao)
 }
+
+/// Create a dynamic trail VAO with pre-allocated position + alpha buffers.
+/// Returns (VAO, position VBO, alpha VBO).
+pub fn create_trail_vao(
+    gl: &GL,
+    max_points: usize,
+) -> Result<(web_sys::WebGlVertexArrayObject, web_sys::WebGlBuffer, web_sys::WebGlBuffer), JsValue> {
+    let vao = gl
+        .create_vertex_array()
+        .ok_or_else(|| JsValue::from_str("Failed to create trail VAO"))?;
+    gl.bind_vertex_array(Some(&vao));
+
+    // Position buffer (location 0) — 3 floats per point
+    let vbo_pos = gl
+        .create_buffer()
+        .ok_or_else(|| JsValue::from_str("Failed to create trail pos VBO"))?;
+    gl.bind_buffer(GL::ARRAY_BUFFER, Some(&vbo_pos));
+    gl.buffer_data_with_i32(
+        GL::ARRAY_BUFFER,
+        (max_points * 3 * 4) as i32,
+        GL::DYNAMIC_DRAW,
+    );
+    gl.vertex_attrib_pointer_with_i32(0, 3, GL::FLOAT, false, 0, 0);
+    gl.enable_vertex_attrib_array(0);
+
+    // Alpha buffer (location 1) — 1 float per point
+    let vbo_alpha = gl
+        .create_buffer()
+        .ok_or_else(|| JsValue::from_str("Failed to create trail alpha VBO"))?;
+    gl.bind_buffer(GL::ARRAY_BUFFER, Some(&vbo_alpha));
+    gl.buffer_data_with_i32(
+        GL::ARRAY_BUFFER,
+        (max_points * 4) as i32,
+        GL::DYNAMIC_DRAW,
+    );
+    gl.vertex_attrib_pointer_with_i32(1, 1, GL::FLOAT, false, 0, 0);
+    gl.enable_vertex_attrib_array(1);
+
+    gl.bind_vertex_array(None);
+    Ok((vao, vbo_pos, vbo_alpha))
+}

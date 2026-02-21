@@ -16,9 +16,10 @@ pub mod starfield;
 pub mod texture;
 
 use camera::Camera;
-use mesh::{create_line_vao, create_mesh_vao};
+use mesh::{create_line_vao, create_mesh_vao, create_trail_vao};
 use render_pass::{
     FrameContext, OrbitPass, PlanetPass, RenderPass, RingPass, StarfieldPass,
+    TrailPass, TrailBuffer,
 };
 use shader::ShaderProgram;
 use std::cell::RefCell;
@@ -41,6 +42,8 @@ const STAR_VERT: &str = include_str!("../../shaders/star.vert");
 const STAR_FRAG: &str = include_str!("../../shaders/star.frag");
 const RING_VERT: &str = include_str!("../../shaders/ring.vert");
 const RING_FRAG: &str = include_str!("../../shaders/ring.frag");
+const TRAIL_VERT: &str = include_str!("../../shaders/trail.vert");
+const TRAIL_FRAG: &str = include_str!("../../shaders/trail.frag");
 
 // ─── Renderer ────────────────────────────────────────────────────────────
 
@@ -103,6 +106,12 @@ impl Renderer {
             RING_FRAG,
             &["u_model", "u_view", "u_projection", "u_color"],
         )?;
+        let trail_shader = ShaderProgram::new(
+            &gl,
+            TRAIL_VERT,
+            TRAIL_FRAG,
+            &["u_view", "u_projection", "u_color"],
+        )?;
 
         // ── Generate & upload meshes ──
 
@@ -122,6 +131,19 @@ impl Renderer {
             let path = orbit::generate_orbit_path(body.semi_major_axis_au, body.inclination_rad);
             let vao = create_line_vao(&gl, &path)?;
             orbit_vaos.push((vao, path.len() as i32));
+        }
+
+        // Trail VAOs (one per non-star body)
+        let mut trail_buffers = Vec::new();
+        for _body in bodies.iter().filter(|b| !b.is_star) {
+            let (vao, vbo_pos, vbo_alpha) =
+                create_trail_vao(&gl, crate::constants::TRAIL_MAX_POINTS)?;
+            trail_buffers.push(TrailBuffer {
+                positions: std::collections::VecDeque::new(),
+                vao,
+                vbo_pos,
+                vbo_alpha,
+            });
         }
 
         let aspect = canvas_width as f32 / canvas_height as f32;
@@ -148,6 +170,10 @@ impl Renderer {
             Box::new(OrbitPass {
                 shader: orbit_shader,
                 vaos: orbit_vaos,
+            }),
+            Box::new(TrailPass {
+                shader: trail_shader,
+                trails: trail_buffers,
             }),
             Box::new(PlanetPass {
                 shader: planet_shader,
@@ -188,7 +214,7 @@ impl Renderer {
             time: self.render_time,
         };
 
-        for pass in &self.passes {
+        for pass in &mut self.passes {
             pass.draw(&ctx, bodies);
         }
     }

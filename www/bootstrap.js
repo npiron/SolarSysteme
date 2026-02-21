@@ -106,6 +106,44 @@ document.getElementById('hud-slower')?.addEventListener('click', () => dispatchK
 document.getElementById('hud-faster')?.addEventListener('click', () => dispatchKey('+'));
 document.getElementById('hud-reset')?.addEventListener('click', () => dispatchKey('R'));
 
+// ── Camera control buttons ───────────────────────────────────────────────
+
+document.getElementById('hud-zoom-in')?.addEventListener('click', () => {
+    // Simulate scroll-up for zoom in
+    const canvas = document.getElementById('solara-canvas');
+    if (canvas) {
+        canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -300, bubbles: true }));
+    }
+});
+
+document.getElementById('hud-zoom-out')?.addEventListener('click', () => {
+    const canvas = document.getElementById('solara-canvas');
+    if (canvas) {
+        canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 300, bubbles: true }));
+    }
+});
+
+document.getElementById('hud-home')?.addEventListener('click', () => dispatchKey('Home'));
+document.getElementById('hud-top-view')?.addEventListener('click', () => dispatchKey('t'));
+
+// ── Help panel toggle ────────────────────────────────────────────────────
+
+function toggleHelp() {
+    const panel = document.getElementById('help-panel');
+    if (panel) panel.classList.toggle('hidden');
+}
+
+document.getElementById('hud-help')?.addEventListener('click', toggleHelp);
+document.getElementById('help-close')?.addEventListener('click', toggleHelp);
+
+// Close help on Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+        e.preventDefault();
+        toggleHelp();
+    }
+});
+
 // ── Debounced resize ─────────────────────────────────────────────────────
 
 let resizeTimer;

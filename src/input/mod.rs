@@ -488,6 +488,24 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
             "h" | "H" => {
                 crate::hud::toggle();
             }
+            // Home → re-center camera on Sun, deselect planet
+            "Home" => {
+                e.prevent_default();
+                let mut s = state.borrow_mut();
+                deselect_all(&mut s);
+                // Reset camera to default distance & angles
+                s.renderer.camera.set_target(
+                    glam::Vec3::ZERO,
+                    crate::constants::CAMERA_DISTANCE,
+                );
+            }
+            // T → top-down view
+            "t" | "T" => {
+                e.prevent_default();
+                let mut s = state.borrow_mut();
+                s.renderer.camera.phi = crate::constants::PHI_CLAMP;  // look from above
+                s.renderer.camera.theta = 0.0;
+            }
             // Escape → deselect planet, return to overview
             "Escape" => {
                 e.prevent_default();

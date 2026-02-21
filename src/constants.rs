@@ -109,6 +109,11 @@ pub const PLANET_CLICK_RADIUS_FACTOR: f32 = 2.5;
 /// Multiplier applied to `display_radius` to compute auto-zoom distance.
 pub const PLANET_ZOOM_FACTOR: f32 = 12.0;
 
+// ─── Planet trails ──────────────────────────────────────────────────────
+
+/// Maximum number of past positions stored per planet trail.
+pub const TRAIL_MAX_POINTS: usize = 300;
+
 // ─── Simulation defaults ────────────────────────────────────────────────
 
 /// Default simulation speed: Earth-days per real second.

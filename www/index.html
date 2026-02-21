@@ -33,10 +33,55 @@
 
     <!-- ── Speed / pause controls (bottom-center) ── -->
     <div id="hud-controls">
-        <button id="hud-slower" class="hud-btn" title="Slower (− / ↓)">−</button>
-        <button id="hud-pause" class="hud-btn" title="Pause / Resume (Space)">⏸</button>
-        <button id="hud-faster" class="hud-btn" title="Faster (+ / ↑)">+</button>
-        <button id="hud-reset" class="hud-btn" title="Reset speed (R)">↺</button>
+        <div class="ctrl-group" data-tooltip="Simulation speed">
+            <button id="hud-slower" class="hud-btn" title="Slow down (− or ↓)" aria-label="Slow down">−</button>
+            <button id="hud-pause" class="hud-btn" title="Pause / Resume (Space)" aria-label="Pause">⏸</button>
+            <button id="hud-faster" class="hud-btn" title="Speed up (+ or ↑)" aria-label="Speed up">+</button>
+            <button id="hud-reset" class="hud-btn" title="Reset to ×1 speed (R)" aria-label="Reset speed">↺</button>
+        </div>
+        <div class="ctrl-divider"></div>
+        <div class="ctrl-group" data-tooltip="Camera">
+            <button id="hud-zoom-in" class="hud-btn" title="Zoom in (scroll up)" aria-label="Zoom in">🔍+</button>
+            <button id="hud-zoom-out" class="hud-btn" title="Zoom out (scroll down)" aria-label="Zoom out">🔍−</button>
+            <button id="hud-home" class="hud-btn" title="Re-center on the Sun (Home)" aria-label="Center on Sun">⌂</button>
+            <button id="hud-top-view" class="hud-btn" title="Top-down view (T)" aria-label="Top view">⊙</button>
+        </div>
+        <div class="ctrl-divider"></div>
+        <button id="hud-help" class="hud-btn hud-btn-help" title="Show keyboard shortcuts (?)" aria-label="Help">?</button>
+    </div>
+
+    <!-- ── Help / keyboard shortcuts panel ── -->
+    <div id="help-panel" class="help-panel hidden">
+        <div class="help-header">
+            <h3>Keyboard Shortcuts</h3>
+            <button id="help-close" class="help-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="help-section">
+            <h4>🎥 Camera</h4>
+            <div class="help-row"><kbd>Drag</kbd><span>Rotate view</span></div>
+            <div class="help-row"><kbd>Scroll</kbd><span>Zoom in / out</span></div>
+            <div class="help-row"><kbd>Home</kbd><span>Re-center on the Sun</span></div>
+            <div class="help-row"><kbd>T</kbd><span>Top-down view</span></div>
+            <div class="help-row"><kbd>Pinch</kbd><span>Zoom (touch devices)</span></div>
+        </div>
+        <div class="help-section">
+            <h4>⏱ Simulation</h4>
+            <div class="help-row"><kbd>Space</kbd><span>Pause / Resume</span></div>
+            <div class="help-row"><kbd>+ / ↑</kbd><span>Speed up</span></div>
+            <div class="help-row"><kbd>− / ↓</kbd><span>Slow down</span></div>
+            <div class="help-row"><kbd>R</kbd><span>Reset speed (×1)</span></div>
+        </div>
+        <div class="help-section">
+            <h4>🪐 Planets</h4>
+            <div class="help-row"><kbd>1</kbd>–<kbd>8</kbd><span>Select planet</span></div>
+            <div class="help-row"><kbd>Dbl-Click</kbd><span>Lock camera on planet</span></div>
+            <div class="help-row"><kbd>Esc</kbd><span>Return to overview</span></div>
+        </div>
+        <div class="help-section">
+            <h4>📊 Display</h4>
+            <div class="help-row"><kbd>H</kbd><span>Toggle HUD</span></div>
+            <div class="help-row"><kbd>?</kbd><span>This help panel</span></div>
+        </div>
     </div>
 
     <!-- ── Planet info panel ── -->
@@ -64,7 +109,7 @@
 
     <!-- ── Controls hint ── -->
     <div id="controls-hint" class="controls-hint">
-        1–8: select planet &nbsp;·&nbsp; ESC: overview &nbsp;·&nbsp; DOUBLE-CLICK: lock camera
+        Drag: rotate &nbsp;·&nbsp; Scroll: zoom &nbsp;·&nbsp; 1–8: select planet &nbsp;·&nbsp; ?: help
     </div>
 
     <!-- ── Splash / loading screen ── -->
