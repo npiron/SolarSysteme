@@ -115,12 +115,12 @@ fn bind_touch_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
                     s.last_touch_y = t.client_y() as f32;
                 }
                 s.touch_distance = None;
-            } else if touches.length() == 2 {
-                if let (Some(t0), Some(t1)) = (touches.get(0), touches.get(1)) {
-                    let dx = (t1.client_x() - t0.client_x()) as f32;
-                    let dy = (t1.client_y() - t0.client_y()) as f32;
-                    s.touch_distance = Some((dx * dx + dy * dy).sqrt());
-                }
+            } else if touches.length() == 2
+                && let (Some(t0), Some(t1)) = (touches.get(0), touches.get(1))
+            {
+                let dx = (t1.client_x() - t0.client_x()) as f32;
+                let dy = (t1.client_y() - t0.client_y()) as f32;
+                s.touch_distance = Some((dx * dx + dy * dy).sqrt());
             }
         }) as Box<dyn FnMut(web_sys::TouchEvent)>);
         canvas
@@ -150,17 +150,17 @@ fn bind_touch_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
                     s.last_touch_x = x;
                     s.last_touch_y = y;
                 }
-            } else if touches.length() == 2 {
-                if let (Some(t0), Some(t1)) = (touches.get(0), touches.get(1)) {
-                    let dx = (t1.client_x() - t0.client_x()) as f32;
-                    let dy = (t1.client_y() - t0.client_y()) as f32;
-                    let new_dist = (dx * dx + dy * dy).sqrt();
-                    if let Some(old_dist) = s.touch_distance {
-                        let delta = old_dist - new_dist;
-                        s.renderer.camera.zoom(delta * TOUCH_ZOOM_MULTIPLIER);
-                    }
-                    s.touch_distance = Some(new_dist);
+            } else if touches.length() == 2
+                && let (Some(t0), Some(t1)) = (touches.get(0), touches.get(1))
+            {
+                let dx = (t1.client_x() - t0.client_x()) as f32;
+                let dy = (t1.client_y() - t0.client_y()) as f32;
+                let new_dist = (dx * dx + dy * dy).sqrt();
+                if let Some(old_dist) = s.touch_distance {
+                    let delta = old_dist - new_dist;
+                    s.renderer.camera.zoom(delta * TOUCH_ZOOM_MULTIPLIER);
                 }
+                s.touch_distance = Some(new_dist);
             }
         }) as Box<dyn FnMut(web_sys::TouchEvent)>);
         canvas

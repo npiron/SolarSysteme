@@ -122,12 +122,7 @@ pub fn start() -> Result<(), JsValue> {
         };
         *lt = timestamp;
 
-        {
-            let mut s = state.borrow_mut();
-            s.simulation.update(dt);
-            let bodies = s.simulation.bodies.clone();
-            s.renderer.render(&bodies, dt as f32);
-        }
+        state.borrow_mut().tick(dt);
 
         request_animation_frame(f.borrow().as_ref().unwrap());
     }) as Box<dyn FnMut(f64)>));
@@ -142,8 +137,15 @@ pub fn start() -> Result<(), JsValue> {
 
 #[cfg(test)]
 mod tests {
+    use crate::constants::*;
     use crate::data::solar_system::create_solar_system;
+    use crate::renderer::camera::Camera;
+    use crate::renderer::mesh;
+    use crate::simulation::orbit;
+    use crate::simulation::time::SimulationTime;
     use crate::simulation::Simulation;
+
+    // ── Solar system data ──
 
     #[test]
     fn all_planets_initialized() {
@@ -184,11 +186,213 @@ mod tests {
     }
 
     #[test]
+    fn all_bodies_have_texture_files() {
+        let bodies = create_solar_system();
+        for body in &bodies {
+            assert!(
+                body.texture_file.is_some(),
+                "{} should have a texture file",
+                body.name
+            );
+        }
+    }
+
+    // ── Simulation / time ──
+
+    #[test]
     fn simulation_advances_time() {
         let bodies = create_solar_system();
         let mut sim = Simulation::new(bodies);
         assert_eq!(sim.time.current_days, 0.0);
         sim.update(1.0);
         assert!(sim.time.current_days > 0.0);
+    }
+
+    #[test]
+    fn simulation_pause_stops_time() {
+        let mut time = SimulationTime::new();
+        time.toggle_pause();
+        time.advance(10.0);
+        assert_eq!(time.current_days, 0.0, "Time should not advance while paused");
+    }
+
+    #[test]
+    fn simulation_speed_multiplier() {
+        let mut time = SimulationTime::new();
+        time.set_speed(10.0);
+        time.advance(1.0); // 1 real second
+        assert!(
+            (time.current_days - 10.0).abs() < 1e-9,
+            "10 days/sec × 1 sec = 10 days, got {}",
+            time.current_days
+        );
+    }
+
+    #[test]
+    fn simulation_speed_cannot_be_negative() {
+        let mut time = SimulationTime::new();
+        time.set_speed(-5.0);
+        assert_eq!(time.days_per_second, 0.0);
+    }
+
+    #[test]
+    fn simulation_default_speed() {
+        let time = SimulationTime::new();
+        assert_eq!(time.days_per_second, DEFAULT_DAYS_PER_SECOND);
+    }
+
+    // ── Camera ──
+
+    #[test]
+    fn camera_defaults_from_constants() {
+        let cam = Camera::new(16.0 / 9.0);
+        assert_eq!(cam.theta, CAMERA_THETA);
+        assert_eq!(cam.phi, CAMERA_PHI);
+        assert_eq!(cam.distance, CAMERA_DISTANCE);
+        assert_eq!(cam.min_distance, CAMERA_MIN_DISTANCE);
+        assert_eq!(cam.max_distance, CAMERA_MAX_DISTANCE);
+    }
+
+    #[test]
+    fn camera_eye_not_at_target() {
+        let cam = Camera::new(1.0);
+        let eye = cam.eye_position();
+        assert!(
+            eye.distance(cam.target) > 1.0,
+            "Eye should be away from target"
+        );
+    }
+
+    #[test]
+    fn camera_zoom_clamps() {
+        let mut cam = Camera::new(1.0);
+        // Zoom way in
+        for _ in 0..5000 {
+            cam.zoom(-100.0);
+        }
+        assert!(
+            cam.distance >= cam.min_distance,
+            "Should not go below min distance"
+        );
+        // Zoom way out
+        for _ in 0..5000 {
+            cam.zoom(100.0);
+        }
+        assert!(
+            cam.distance <= cam.max_distance,
+            "Should not exceed max distance"
+        );
+    }
+
+    #[test]
+    fn camera_rotate_clamps_phi() {
+        let mut cam = Camera::new(1.0);
+        // Rotate up a lot
+        for _ in 0..10000 {
+            cam.rotate(0.0, -10.0);
+        }
+        assert!(cam.phi >= -PHI_CLAMP);
+        assert!(cam.phi <= PHI_CLAMP);
+    }
+
+    #[test]
+    fn camera_set_aspect() {
+        let mut cam = Camera::new(1.0);
+        cam.set_aspect(2.0);
+        assert_eq!(cam.aspect, 2.0);
+    }
+
+    #[test]
+    fn camera_matrices_are_finite() {
+        let cam = Camera::new(16.0 / 9.0);
+        let view = cam.view_matrix();
+        let proj = cam.projection_matrix();
+        for col in view.to_cols_array() {
+            assert!(col.is_finite(), "View matrix has non-finite element");
+        }
+        for col in proj.to_cols_array() {
+            assert!(col.is_finite(), "Projection matrix has non-finite element");
+        }
+    }
+
+    // ── Mesh generation ──
+
+    #[test]
+    fn sphere_has_vertices_and_indices() {
+        let sphere = mesh::generate_sphere();
+        assert!(!sphere.vertices.is_empty(), "Sphere should have vertices");
+        assert!(!sphere.indices.is_empty(), "Sphere should have indices");
+        // 8 floats per vertex (pos.xyz + norm.xyz + uv.xy)
+        assert_eq!(sphere.vertices.len() % 8, 0, "Vertex data should be 8-float aligned");
+    }
+
+    #[test]
+    fn ring_has_vertices_and_indices() {
+        let ring = mesh::generate_ring();
+        assert!(!ring.vertices.is_empty());
+        assert!(!ring.indices.is_empty());
+    }
+
+    #[test]
+    fn sphere_custom_resolution() {
+        let lo = mesh::generate_sphere_custom(8, 6);
+        let hi = mesh::generate_sphere_custom(64, 48);
+        assert!(
+            hi.vertices.len() > lo.vertices.len(),
+            "Higher resolution should produce more vertices"
+        );
+    }
+
+    // ── Orbit geometry ──
+
+    #[test]
+    fn orbit_path_is_closed_loop() {
+        let path = orbit::generate_orbit_path(1.0, 0.0);
+        assert_eq!(path.len(), ORBIT_SEGMENTS + 1, "Path should have SEGMENTS+1 points");
+        let first = path.first().unwrap();
+        let last = path.last().unwrap();
+        assert!(
+            first.distance(*last) < 0.01,
+            "First and last points should nearly coincide"
+        );
+    }
+
+    #[test]
+    fn orbit_radius_scales_with_au() {
+        let inner = orbit::generate_orbit_path(1.0, 0.0);
+        let outer = orbit::generate_orbit_path(5.0, 0.0);
+        let r_inner = inner[0].length();
+        let r_outer = outer[0].length();
+        assert!(
+            r_outer > r_inner * 4.0,
+            "5 AU orbit should be much larger than 1 AU orbit"
+        );
+    }
+
+    #[test]
+    fn orbit_with_inclination_has_y_component() {
+        let flat = orbit::generate_orbit_path(1.0, 0.0);
+        let tilted = orbit::generate_orbit_path(1.0, 0.3);
+        let max_y_flat: f32 = flat.iter().map(|p| p.y.abs()).fold(0.0, f32::max);
+        let max_y_tilted: f32 = tilted.iter().map(|p| p.y.abs()).fold(0.0, f32::max);
+        assert!(
+            max_y_tilted > max_y_flat + 0.1,
+            "Tilted orbit should have larger Y extent"
+        );
+    }
+
+    // ── Constants consistency ──
+
+    #[test]
+    fn camera_near_less_than_far() {
+        assert!(CAMERA_NEAR < CAMERA_FAR);
+    }
+
+    #[test]
+    fn starfield_radius_exceeds_camera_max() {
+        assert!(
+            STARFIELD_RADIUS > CAMERA_MAX_DISTANCE,
+            "Stars should be beyond max zoom-out distance"
+        );
     }
 }

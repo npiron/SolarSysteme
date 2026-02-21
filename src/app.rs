@@ -35,4 +35,14 @@ impl AppState {
             touch_distance: None,
         }
     }
+
+    /// Advance the simulation and render one frame.
+    ///
+    /// This method exists so Rust can see that `self.simulation.bodies` and
+    /// `self.renderer` are disjoint borrows — avoiding the need to clone
+    /// the body list every frame.
+    pub fn tick(&mut self, dt: f64) {
+        self.simulation.update(dt);
+        self.renderer.render(&self.simulation.bodies, dt as f32);
+    }
 }
