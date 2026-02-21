@@ -50,6 +50,30 @@ window.solaraHideSplash = function () {
     }, 400);
 };
 
+// ── HUD update callback (called from Rust after each speed / pause change) ──
+
+window.solaraUpdateHud = function (speed, paused) {
+    const pauseBtn = document.getElementById('hud-pause');
+    const speedEl  = document.getElementById('hud-speed');
+    if (pauseBtn) pauseBtn.textContent = paused ? '▶' : '⏸';
+    if (speedEl) {
+        speedEl.textContent = speed < 1
+            ? '×' + speed.toFixed(1)
+            : '×' + Math.round(speed);
+    }
+};
+
+// ── HUD button → keyboard event bridge ──────────────────────────────────
+
+function dispatchKey(key) {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+}
+
+document.getElementById('hud-pause')?.addEventListener('click', () => dispatchKey(' '));
+document.getElementById('hud-slower')?.addEventListener('click', () => dispatchKey('-'));
+document.getElementById('hud-faster')?.addEventListener('click', () => dispatchKey('+'));
+document.getElementById('hud-reset')?.addEventListener('click', () => dispatchKey('R'));
+
 // ── Debounced resize ─────────────────────────────────────────────────────
 
 let resizeTimer;

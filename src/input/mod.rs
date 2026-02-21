@@ -12,6 +12,17 @@ use web_sys::HtmlCanvasElement;
 use crate::app::AppState;
 use crate::constants::{DEFAULT_DAYS_PER_SECOND, TOUCH_ZOOM_MULTIPLIER};
 
+// ── HUD bridge ───────────────────────────────────────────────────────────
+
+#[wasm_bindgen(inline_js = "
+    export function hud_update(speed, paused) {
+        if (window.solaraUpdateHud) window.solaraUpdateHud(speed, paused);
+    }
+")]
+extern "C" {
+    fn hud_update(speed: f64, paused: bool);
+}
+
 /// Attach all input event listeners to the given canvas.
 ///
 /// Every closure is `.forget()`-ed so it lives as long as the page.
@@ -184,29 +195,30 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
             // Space → toggle pause
             " " => {
                 e.prevent_default();
-                state.borrow_mut().simulation.time.toggle_pause();
+                let mut s = state.borrow_mut();
+                s.simulation.time.toggle_pause();
+                hud_update(s.simulation.time.days_per_second, s.simulation.time.paused);
             }
-            // Arrow Up → double speed
-            "ArrowUp" => {
+            // Arrow Up / + → speed up
+            "ArrowUp" | "+" => {
                 e.prevent_default();
                 let mut s = state.borrow_mut();
-                let spd = s.simulation.time.days_per_second;
-                s.simulation.time.set_speed(spd * 2.0);
+                s.simulation.time.speed_up();
+                hud_update(s.simulation.time.days_per_second, s.simulation.time.paused);
             }
-            // Arrow Down → halve speed
-            "ArrowDown" => {
+            // Arrow Down / - → slow down
+            "ArrowDown" | "-" => {
                 e.prevent_default();
                 let mut s = state.borrow_mut();
-                let spd = s.simulation.time.days_per_second;
-                s.simulation.time.set_speed((spd * 0.5).max(0.125));
+                s.simulation.time.speed_down();
+                hud_update(s.simulation.time.days_per_second, s.simulation.time.paused);
             }
             // R → reset speed to default
             "r" | "R" => {
-                state
-                    .borrow_mut()
-                    .simulation
-                    .time
-                    .set_speed(DEFAULT_DAYS_PER_SECOND);
+                let mut s = state.borrow_mut();
+                s.simulation.time.set_speed(DEFAULT_DAYS_PER_SECOND);
+                s.simulation.time.paused = false;
+                hud_update(s.simulation.time.days_per_second, s.simulation.time.paused);
             }
             _ => {}
         }
