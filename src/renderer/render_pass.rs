@@ -45,26 +45,30 @@ impl RenderPass for PlanetPass {
         let s = &self.shader;
         s.activate(gl);
 
+        let textures = self.textures.borrow();
+        gl.bind_vertex_array(Some(&self.vao));
+
+        // Frame-constant uniforms — set once outside the loop
+        s.set_mat4(gl, "u_view", &ctx.view);
+        s.set_mat4(gl, "u_projection", &ctx.projection);
+        s.set_vec3(gl, "u_light_pos", &[0.0, 0.0, 0.0]);
+        s.set_vec3(
+            gl,
+            "u_view_pos",
+            &[ctx.eye_position.x, ctx.eye_position.y, ctx.eye_position.z],
+        );
+
         for body in bodies {
             let model = Mat4::from_translation(body.position)
                 * Mat4::from_scale(Vec3::splat(body.display_radius));
             let normal_matrix = model.inverse().transpose();
 
             s.set_mat4(gl, "u_model", &model);
-            s.set_mat4(gl, "u_view", &ctx.view);
-            s.set_mat4(gl, "u_projection", &ctx.projection);
             s.set_mat4(gl, "u_normal_matrix", &normal_matrix);
             s.set_vec3(gl, "u_color", &body.color);
-            s.set_vec3(gl, "u_light_pos", &[0.0, 0.0, 0.0]);
-            s.set_vec3(
-                gl,
-                "u_view_pos",
-                &[ctx.eye_position.x, ctx.eye_position.y, ctx.eye_position.z],
-            );
             s.set_bool(gl, "u_is_star", body.is_star);
 
             // Texture binding
-            let textures = self.textures.borrow();
             let has_texture = textures.contains_key(body.name);
             s.set_bool(gl, "u_has_texture", has_texture);
             if has_texture {
@@ -73,14 +77,11 @@ impl RenderPass for PlanetPass {
                 s.set_int(gl, "u_texture", 0);
             }
 
-            gl.bind_vertex_array(Some(&self.vao));
             gl.draw_elements_with_i32(GL::TRIANGLES, self.index_count, GL::UNSIGNED_SHORT, 0);
-            gl.bind_vertex_array(None);
-
-            if has_texture {
-                gl.bind_texture(GL::TEXTURE_2D, None);
-            }
         }
+
+        gl.bind_texture(GL::TEXTURE_2D, None);
+        gl.bind_vertex_array(None);
     }
 }
 
@@ -98,19 +99,27 @@ impl RenderPass for RingPass {
         let s = &self.shader;
         s.activate(gl);
 
+        gl.bind_vertex_array(Some(&self.vao));
+
+        // Frame-constant uniforms
+        s.set_mat4(gl, "u_view", &ctx.view);
+        s.set_mat4(gl, "u_projection", &ctx.projection);
+
+        // Disable culling for rings (double-sided)
+        gl.disable(GL::CULL_FACE);
+
         for body in bodies.iter().filter(|b| b.has_rings) {
             let model = Mat4::from_translation(body.position)
                 * Mat4::from_scale(Vec3::splat(body.display_radius));
 
             s.set_mat4(gl, "u_model", &model);
-            s.set_mat4(gl, "u_view", &ctx.view);
-            s.set_mat4(gl, "u_projection", &ctx.projection);
             s.set_vec3(gl, "u_color", &body.color);
 
-            gl.bind_vertex_array(Some(&self.vao));
             gl.draw_elements_with_i32(GL::TRIANGLES, self.index_count, GL::UNSIGNED_SHORT, 0);
-            gl.bind_vertex_array(None);
         }
+
+        gl.enable(GL::CULL_FACE);
+        gl.bind_vertex_array(None);
     }
 }
 
@@ -157,6 +166,9 @@ impl RenderPass for StarfieldPass {
         let s = &self.shader;
         s.activate(gl);
 
+        // Don't write to depth buffer — stars are a backdrop
+        gl.depth_mask(false);
+
         // Skybox-style: strip translation from the view matrix
         let mut sky_view = ctx.view;
         sky_view.w_axis.x = 0.0;
@@ -170,5 +182,7 @@ impl RenderPass for StarfieldPass {
         gl.bind_vertex_array(Some(&self.vao));
         gl.draw_arrays(GL::POINTS, 0, self.count);
         gl.bind_vertex_array(None);
+
+        gl.depth_mask(true);
     }
 }

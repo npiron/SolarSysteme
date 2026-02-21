@@ -89,22 +89,27 @@ pub fn generate_ring_custom(inner: f32, outer: f32, segments: u32) -> Mesh {
         let angle = (i as f32 / segments as f32) * std::f32::consts::TAU;
         let cos_a = angle.cos();
         let sin_a = angle.sin();
+        let u = i as f32 / segments as f32;
 
-        // Inner vertex (pos + normal up)
+        // Inner vertex (pos + normal up + uv)
         vertices.push(inner * cos_a);
         vertices.push(0.0);
         vertices.push(inner * sin_a);
         vertices.push(0.0);
         vertices.push(1.0);
         vertices.push(0.0);
+        vertices.push(u);
+        vertices.push(0.0);
 
-        // Outer vertex (pos + normal up)
+        // Outer vertex (pos + normal up + uv)
         vertices.push(outer * cos_a);
         vertices.push(0.0);
         vertices.push(outer * sin_a);
         vertices.push(0.0);
         vertices.push(1.0);
         vertices.push(0.0);
+        vertices.push(u);
+        vertices.push(1.0);
     }
 
     for i in 0..segments {

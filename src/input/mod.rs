@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::HtmlCanvasElement;
 
 use crate::app::AppState;
-use crate::constants::TOUCH_ZOOM_MULTIPLIER;
+use crate::constants::{DEFAULT_DAYS_PER_SECOND, TOUCH_ZOOM_MULTIPLIER};
 
 /// Attach all input event listeners to the given canvas.
 ///
@@ -20,6 +20,7 @@ pub fn setup_input(canvas: &HtmlCanvasElement, state: Rc<RefCell<AppState>>) {
     bind_mouse_events(canvas, &state);
     bind_wheel_event(canvas, &state);
     bind_touch_events(canvas, &state);
+    bind_keyboard_events(&state);
 }
 
 // ── Mouse ────────────────────────────────────────────────────────────────
@@ -36,7 +37,7 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
         }) as Box<dyn FnMut(web_sys::MouseEvent)>);
         canvas
             .add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())
-            .unwrap();
+            .expect("Failed to bind mousedown listener");
         closure.forget();
     }
 
@@ -48,7 +49,7 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
         }) as Box<dyn FnMut(web_sys::MouseEvent)>);
         canvas
             .add_event_listener_with_callback("mouseup", closure.as_ref().unchecked_ref())
-            .unwrap();
+            .expect("Failed to bind mouseup listener");
         closure.forget();
     }
 
@@ -67,7 +68,7 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
         }) as Box<dyn FnMut(web_sys::MouseEvent)>);
         canvas
             .add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())
-            .unwrap();
+            .expect("Failed to bind mousemove listener");
         closure.forget();
     }
 }
@@ -89,7 +90,7 @@ fn bind_wheel_event(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) {
             closure.as_ref().unchecked_ref(),
             &opts,
         )
-        .unwrap();
+        .expect("Failed to bind wheel listener");
     closure.forget();
 }
 
@@ -129,7 +130,7 @@ fn bind_touch_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
                 closure.as_ref().unchecked_ref(),
                 &touch_opts(),
             )
-            .unwrap();
+            .expect("Failed to bind touchstart listener");
         closure.forget();
     }
 
@@ -169,7 +170,54 @@ fn bind_touch_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
                 closure.as_ref().unchecked_ref(),
                 &touch_opts(),
             )
-            .unwrap();
+            .expect("Failed to bind touchmove listener");
         closure.forget();
     }
+}
+
+// ── Keyboard ─────────────────────────────────────────────────────────────
+
+fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
+    let state = Rc::clone(state);
+    let closure = Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
+        match e.key().as_str() {
+            // Space → toggle pause
+            " " => {
+                e.prevent_default();
+                state.borrow_mut().simulation.time.toggle_pause();
+            }
+            // Arrow Up → double speed
+            "ArrowUp" => {
+                e.prevent_default();
+                let mut s = state.borrow_mut();
+                let spd = s.simulation.time.days_per_second;
+                s.simulation.time.set_speed(spd * 2.0);
+            }
+            // Arrow Down → halve speed
+            "ArrowDown" => {
+                e.prevent_default();
+                let mut s = state.borrow_mut();
+                let spd = s.simulation.time.days_per_second;
+                s.simulation.time.set_speed((spd * 0.5).max(0.125));
+            }
+            // R → reset speed to default
+            "r" | "R" => {
+                state
+                    .borrow_mut()
+                    .simulation
+                    .time
+                    .set_speed(DEFAULT_DAYS_PER_SECOND);
+            }
+            _ => {}
+        }
+    }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
+
+    // Bind to document so it works even without canvas focus
+    let document = web_sys::window()
+        .and_then(|w| w.document())
+        .expect("Failed to get document for keyboard events");
+    document
+        .add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())
+        .expect("Failed to bind keydown listener");
+    closure.forget();
 }

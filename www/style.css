@@ -35,12 +35,11 @@ html, body {
     width: 100%;
     height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     background: #0a0a1a;
     z-index: 100;
-    transition: opacity 0.8s ease-out;
+    transition: opacity 1s ease-out;
 }
 
 #loading.hidden {
@@ -48,22 +47,147 @@ html, body {
     pointer-events: none;
 }
 
-.loader-text {
-    font-size: 3rem;
+/* ── Splash layout ── */
+.splash {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    user-select: none;
+}
+
+/* Animated sun glow */
+.splash-sun {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffdd55 0%, #ff9900 60%, #cc660080 100%);
+    box-shadow:
+        0 0 30px rgba(255, 153, 0, 0.5),
+        0 0 80px rgba(255, 153, 0, 0.25),
+        0 0 140px rgba(255, 120, 0, 0.10);
+    animation: sun-glow 2.5s ease-in-out infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes sun-glow {
+    0%, 100% {
+        box-shadow:
+            0 0 30px rgba(255, 153, 0, 0.5),
+            0 0 80px rgba(255, 153, 0, 0.25),
+            0 0 140px rgba(255, 120, 0, 0.10);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow:
+            0 0 50px rgba(255, 153, 0, 0.7),
+            0 0 110px rgba(255, 153, 0, 0.4),
+            0 0 180px rgba(255, 120, 0, 0.18);
+        transform: scale(1.04);
+    }
+}
+
+.splash-title {
+    font-size: 2.8rem;
     font-weight: 300;
     letter-spacing: 1.2rem;
-    color: rgba(255, 255, 255, 0.9);
-    animation: pulse 2s ease-in-out infinite;
+    margin-left: 1.2rem;           /* compensate letter-spacing on last char */
+    color: rgba(255, 255, 255, 0.92);
 }
 
-.loader-sub {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.4);
-    letter-spacing: 0.2rem;
+.splash-subtitle {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.25rem;
+    margin-top: 0.2rem;
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1.0; }
+/* ── Progress bar ── */
+.splash-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 1.8rem;
+}
+
+.progress-bar {
+    width: 260px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff9900, #ffcc44);
+    border-radius: 2px;
+    transition: width 0.35s ease;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    min-width: 3ch;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Status text ── */
+.splash-status {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.30);
+    letter-spacing: 0.05rem;
+    margin-top: 0.4rem;
+    min-height: 1.2em;
+}
+
+/* ── Step list ── */
+.splash-steps {
+    margin-top: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.78rem;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.step-separator {
+    height: 0.5rem;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.15rem 0;
+    transition: color 0.3s, opacity 0.3s;
+}
+
+.step-item.pending {
+    color: rgba(255, 255, 255, 0.18);
+}
+
+.step-item.loading {
+    color: rgba(255, 200, 60, 0.9);
+}
+
+.step-item.loading .step-icon {
+    animation: spin 1s linear infinite;
+}
+
+.step-item.done {
+    color: rgba(130, 255, 130, 0.7);
+}
+
+.step-icon {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+    font-size: 0.75rem;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }

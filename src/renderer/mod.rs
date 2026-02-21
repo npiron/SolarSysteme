@@ -129,6 +129,8 @@ impl Renderer {
 
         // Global GL state
         gl.enable(GL::DEPTH_TEST);
+        gl.enable(GL::CULL_FACE);
+        gl.cull_face(GL::BACK);
         gl.enable(GL::BLEND);
         gl.blend_func(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA);
         gl.clear_color(0.04, 0.04, 0.1, 1.0);

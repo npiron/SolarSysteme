@@ -20,6 +20,7 @@ mod data;
 mod input;
 mod renderer;
 mod simulation;
+mod splash;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -36,9 +37,8 @@ use web_sys::WebGl2RenderingContext as GL;
 /// Schedule the next animation frame.
 fn request_animation_frame(f: &Closure<dyn FnMut(f64)>) -> i32 {
     web_sys::window()
-        .unwrap()
-        .request_animation_frame(f.as_ref().unchecked_ref())
-        .unwrap()
+        .and_then(|w| w.request_animation_frame(f.as_ref().unchecked_ref()).ok())
+        .unwrap_or(0)
 }
 
 // ─── Entry point ─────────────────────────────────────────────────────────
@@ -49,6 +49,9 @@ pub fn start() -> Result<(), JsValue> {
     console_log::init_with_level(log::Level::Info).ok();
 
     log::info!("🚀 SOLARA is starting...");
+
+    splash::update_step("wasm", "done");
+    splash::update_step("webgl", "loading");
 
     // ── Canvas & WebGL2 ──
     let window = web_sys::window().ok_or("No window")?;
@@ -70,13 +73,21 @@ pub fn start() -> Result<(), JsValue> {
         .dyn_into::<GL>()?;
     gl.viewport(0, 0, width as i32, height as i32);
 
+    splash::update_step("webgl", "done");
+    splash::update_step("simulation", "loading");
+
     // ── Simulation ──
     let bodies = data::solar_system::create_solar_system();
     let simulation = Simulation::new(bodies.clone());
 
+    splash::update_step("simulation", "done");
+    splash::update_step("renderer", "loading");
+
     // ── Renderer ──
     let renderer = Renderer::new(gl, width, height, &bodies)?;
     log::info!("✨ Renderer initialized ({width}×{height})");
+
+    splash::update_step("renderer", "done");
 
     // ── Textures (async) ──
     let gl_ref = renderer.gl_handle();
@@ -103,7 +114,7 @@ pub fn start() -> Result<(), JsValue> {
             canvas_resize.set_height(h);
             state_resize.borrow_mut().renderer.resize(w, h);
         }) as Box<dyn FnMut(web_sys::Event)>);
-        window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())?;
+        window.add_event_listener_with_callback("solara-resize", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
 

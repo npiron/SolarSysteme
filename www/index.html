@@ -10,10 +10,85 @@
 </head>
 <body>
     <canvas id="solara-canvas"></canvas>
+
+    <!-- ── Splash / loading screen ── -->
     <div id="loading">
-        <div class="loader-text">SOLARA</div>
-        <div class="loader-sub">Initializing the cosmos…</div>
+        <div class="splash">
+            <div class="splash-sun"></div>
+            <h1 class="splash-title">SOLARA</h1>
+            <p class="splash-subtitle">Solar System Simulator</p>
+
+            <div class="splash-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <span class="progress-text" id="progress-text">0 %</span>
+            </div>
+
+            <p class="splash-status" id="splash-status">Preparing…</p>
+
+            <div class="splash-steps" id="splash-steps">
+                <!-- Engine -->
+                <div class="step-item pending" id="step-wasm">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">WebAssembly</span>
+                </div>
+                <div class="step-item pending" id="step-webgl">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">WebGL2</span>
+                </div>
+                <div class="step-item pending" id="step-simulation">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">Simulation</span>
+                </div>
+                <div class="step-item pending" id="step-renderer">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">Renderer</span>
+                </div>
+
+                <div class="step-separator"></div>
+
+                <!-- Textures -->
+                <div class="step-item pending" id="step-tex-Sun">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">☀ Sun</span>
+                </div>
+                <div class="step-item pending" id="step-tex-Mercury">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">☿ Mercury</span>
+                </div>
+                <div class="step-item pending" id="step-tex-Venus">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">♀ Venus</span>
+                </div>
+                <div class="step-item pending" id="step-tex-Earth">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">⊕ Earth</span>
+                </div>
+                <div class="step-item pending" id="step-tex-Mars">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">♂ Mars</span>
+                </div>
+                <div class="step-item pending" id="step-tex-Jupiter">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">♃ Jupiter</span>
+                </div>
+                <div class="step-item pending" id="step-tex-Saturn">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">♄ Saturn</span>
+                </div>
+                <div class="step-item pending" id="step-tex-Uranus">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">♅ Uranus</span>
+                </div>
+                <div class="step-item pending" id="step-tex-Neptune">
+                    <span class="step-icon">○</span>
+                    <span class="step-label">♆ Neptune</span>
+                </div>
+            </div>
+        </div>
     </div>
+
     <script type="module" src="bootstrap.js"></script>
 </body>
 </html>
