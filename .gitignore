@@ -10,6 +10,7 @@ node_modules/
 
 # Vite build output
 /dist/
+/www/dist/
 
 # OS
 .DS_Store
