@@ -81,6 +81,23 @@ pub const PHI_CLAMP: f32 = 1.4;
 /// Touch pinch zoom multiplier.
 pub const TOUCH_ZOOM_MULTIPLIER: f32 = 2.0;
 
+// ─── Galactic motion ─────────────────────────────────────────────────────────
+
+/// Real orbital speed of the Sun around the galactic centre (km/s).
+#[allow(dead_code)]
+pub const GALACTIC_ORBITAL_SPEED_KM_S: f64 = 220.0;
+
+/// Approximate galactic orbital period of the Sun (years).
+#[allow(dead_code)]
+pub const GALACTIC_PERIOD_YEARS: f64 = 230_000_000.0;
+
+/// Galactic drift speed used for display, in display-units per simulated day.
+///
+/// Derived from the real speed (220 km/s → ~0.127 AU/day → ~5.1 display-units/day
+/// with `AU_TO_DISPLAY = 40`).  Reduce this value to slow the visible drift,
+/// or increase it to exaggerate the galactic motion for demonstration purposes.
+pub const GALACTIC_SPEED_DISPLAY: f32 = 5.086;
+
 // ─── Planet selection / camera focus ────────────────────────────────────
 
 /// Speed factor for smooth camera-target transition (higher = faster convergence).

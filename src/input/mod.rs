@@ -463,6 +463,10 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
                     .time
                     .set_speed(DEFAULT_DAYS_PER_SECOND);
             }
+            // H → toggle HUD visibility
+            "h" | "H" => {
+                crate::hud::toggle();
+            }
             // Escape → deselect planet, return to overview
             "Escape" => {
                 e.prevent_default();

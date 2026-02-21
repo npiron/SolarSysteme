@@ -10,6 +10,7 @@
 //! | [`app`]       | Shared application state                         |
 //! | [`constants`] | Centralised tuneable values                      |
 //! | [`data`]      | NASA-sourced solar system data                   |
+//! | [`hud`]       | HUD DOM updates                                  |
 //! | [`input`]     | Browser event → camera mutations                 |
 //! | [`renderer`]  | WebGL2 draw pipeline, shaders, textures, meshes  |
 //! | [`simulation`]| Kepler orbits, time control, celestial bodies    |
@@ -17,6 +18,7 @@
 mod app;
 mod constants;
 mod data;
+mod hud;
 mod input;
 mod renderer;
 mod simulation;

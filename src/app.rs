@@ -53,6 +53,14 @@ impl AppState {
     pub fn tick(&mut self, dt: f64) {
         self.simulation.update(dt);
 
+        let fps = if dt > 0.0 { (1.0 / dt).min(1000.0) as f32 } else { 0.0 };
+        crate::hud::update(
+            self.simulation.time.current_days,
+            self.simulation.time.days_per_second,
+            self.simulation.time.paused,
+            fps,
+        );
+
         // If locked, keep the lerp target on the moving planet so the camera
         // continuously follows it.
         if self.camera_locked {
