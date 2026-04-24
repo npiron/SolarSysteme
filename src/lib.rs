@@ -116,7 +116,8 @@ pub fn start() -> Result<(), JsValue> {
             canvas_resize.set_height(h);
             state_resize.borrow_mut().renderer.resize(w, h);
         }) as Box<dyn FnMut(web_sys::Event)>);
-        window.add_event_listener_with_callback("solara-resize", closure.as_ref().unchecked_ref())?;
+        window
+            .add_event_listener_with_callback("solara-resize", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
 
@@ -154,9 +155,9 @@ mod tests {
     use crate::data::solar_system::create_solar_system;
     use crate::renderer::camera::Camera;
     use crate::renderer::mesh;
+    use crate::simulation::Simulation;
     use crate::simulation::orbit;
     use crate::simulation::time::SimulationTime;
-    use crate::simulation::Simulation;
 
     // ── Solar system data ──
 
@@ -193,8 +194,12 @@ mod tests {
         let bodies = create_solar_system();
         let mercury = bodies.iter().find(|b| b.name == "Mercury").unwrap();
         let neptune = bodies.iter().find(|b| b.name == "Neptune").unwrap();
-        let merc = mercury.position_at(0.0).distance(mercury.position_at(100.0));
-        let nept = neptune.position_at(0.0).distance(neptune.position_at(100.0));
+        let merc = mercury
+            .position_at(0.0)
+            .distance(mercury.position_at(100.0));
+        let nept = neptune
+            .position_at(0.0)
+            .distance(neptune.position_at(100.0));
         assert!(merc > nept, "Mercury should move faster than Neptune");
     }
 
@@ -226,7 +231,10 @@ mod tests {
         let mut time = SimulationTime::new();
         time.toggle_pause();
         time.advance(10.0);
-        assert_eq!(time.current_days, 0.0, "Time should not advance while paused");
+        assert_eq!(
+            time.current_days, 0.0,
+            "Time should not advance while paused"
+        );
     }
 
     #[test]
@@ -245,7 +253,10 @@ mod tests {
     fn simulation_speed_cannot_be_negative() {
         let mut time = SimulationTime::new();
         time.set_speed(-5.0);
-        assert_eq!(time.days_per_second, 0.1, "Speed should clamp to minimum step");
+        assert_eq!(
+            time.days_per_second, 0.1,
+            "Speed should clamp to minimum step"
+        );
     }
 
     #[test]
@@ -380,7 +391,11 @@ mod tests {
         assert!(!sphere.vertices.is_empty(), "Sphere should have vertices");
         assert!(!sphere.indices.is_empty(), "Sphere should have indices");
         // 8 floats per vertex (pos.xyz + norm.xyz + uv.xy)
-        assert_eq!(sphere.vertices.len() % 8, 0, "Vertex data should be 8-float aligned");
+        assert_eq!(
+            sphere.vertices.len() % 8,
+            0,
+            "Vertex data should be 8-float aligned"
+        );
     }
 
     #[test]
@@ -405,7 +420,11 @@ mod tests {
     #[test]
     fn orbit_path_is_closed_loop() {
         let path = orbit::generate_orbit_path(1.0, 0.0);
-        assert_eq!(path.len(), ORBIT_SEGMENTS + 1, "Path should have SEGMENTS+1 points");
+        assert_eq!(
+            path.len(),
+            ORBIT_SEGMENTS + 1,
+            "Path should have SEGMENTS+1 points"
+        );
         let first = path.first().unwrap();
         let last = path.last().unwrap();
         assert!(
@@ -442,15 +461,17 @@ mod tests {
 
     #[test]
     fn camera_near_less_than_far() {
-        assert!(CAMERA_NEAR < CAMERA_FAR);
+        const { assert!(CAMERA_NEAR < CAMERA_FAR) };
     }
 
     #[test]
     fn starfield_radius_exceeds_camera_max() {
-        assert!(
-            STARFIELD_RADIUS > CAMERA_MAX_DISTANCE,
-            "Stars should be beyond max zoom-out distance"
-        );
+        const {
+            assert!(
+                STARFIELD_RADIUS > CAMERA_MAX_DISTANCE,
+                "Stars should be beyond max zoom-out distance"
+            )
+        };
     }
 
     // ── Planet selection / camera transition ──
@@ -518,8 +539,14 @@ mod tests {
             (cam.distance - 30.0).abs() < 0.1,
             "Camera distance should converge to lerp_distance"
         );
-        assert!(cam.lerp_target.is_none(), "lerp_target should be None after convergence");
-        assert!(cam.lerp_distance.is_none(), "lerp_distance should be None after convergence");
+        assert!(
+            cam.lerp_target.is_none(),
+            "lerp_target should be None after convergence"
+        );
+        assert!(
+            cam.lerp_distance.is_none(),
+            "lerp_distance should be None after convergence"
+        );
     }
 
     #[test]
@@ -528,7 +555,13 @@ mod tests {
         let old_target = cam.target;
         let old_dist = cam.distance;
         cam.update_transition(1.0); // no lerp_target set
-        assert_eq!(cam.target, old_target, "Target should not change without set_target");
-        assert_eq!(cam.distance, old_dist, "Distance should not change without set_target");
+        assert_eq!(
+            cam.target, old_target,
+            "Target should not change without set_target"
+        );
+        assert_eq!(
+            cam.distance, old_dist,
+            "Distance should not change without set_target"
+        );
     }
 }

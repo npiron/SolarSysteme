@@ -67,6 +67,7 @@ impl SimulationTime {
     }
 
     /// Return a human-readable speed label, e.g. `"×10"` or `"×0.5"`.
+    #[allow(dead_code)]
     pub fn speed_label(&self) -> String {
         let m = self.days_per_second / DEFAULT_DAYS_PER_SECOND;
         if m.fract() == 0.0 {

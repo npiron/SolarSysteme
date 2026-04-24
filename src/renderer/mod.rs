@@ -18,8 +18,8 @@ pub mod texture;
 use camera::Camera;
 use mesh::{create_line_vao, create_mesh_vao, create_trail_vao};
 use render_pass::{
-    FrameContext, OrbitPass, PlanetPass, RenderPass, RingPass, StarfieldPass,
-    TrailPass, TrailBuffer,
+    FrameContext, OrbitPass, PlanetPass, RenderPass, RingPass, StarfieldPass, TrailBuffer,
+    TrailPass,
 };
 use shader::ShaderProgram;
 use std::cell::RefCell;
@@ -146,7 +146,7 @@ impl Renderer {
             });
         }
 
-        let aspect = canvas_width as f32 / canvas_height as f32;
+        let aspect = canvas_width as f32 / canvas_height.max(1) as f32;
         let camera = Camera::new(aspect);
 
         // Global GL state
@@ -221,8 +221,9 @@ impl Renderer {
 
     /// Handle canvas resize.
     pub fn resize(&mut self, width: u32, height: u32) {
-        self.gl.viewport(0, 0, width as i32, height as i32);
-        self.camera.set_aspect(width as f32 / height as f32);
+        let safe_height = height.max(1);
+        self.gl.viewport(0, 0, width as i32, safe_height as i32);
+        self.camera.set_aspect(width as f32 / safe_height as f32);
     }
 
     /// Clone of the GL context for external use (e.g. texture loading).

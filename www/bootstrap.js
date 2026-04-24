@@ -57,7 +57,9 @@ let _hudFpsEma = 60;
 
 window.solaraUpdateHud = function (days, speed, paused, fps) {
     // Exponential moving average for smooth FPS display
-    _hudFpsEma = _hudFpsEma * 0.9 + fps * 0.1;
+    if (fps > 0) {
+        _hudFpsEma = _hudFpsEma * 0.9 + fps * 0.1;
+    }
 
     // Convert J2000 days (Jan 1.5 2000 = 2000-01-01T12:00Z) to a calendar date
     const j2000Ms = Date.UTC(2000, 0, 1, 12, 0, 0);
@@ -141,6 +143,9 @@ document.addEventListener('keydown', (e) => {
     if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
         e.preventDefault();
         toggleHelp();
+    } else if (e.key === 'Escape') {
+        const panel = document.getElementById('help-panel');
+        panel?.classList.add('hidden');
     }
 });
 

@@ -81,6 +81,9 @@ pub const PHI_CLAMP: f32 = 1.4;
 /// Touch pinch zoom multiplier.
 pub const TOUCH_ZOOM_MULTIPLIER: f32 = 2.0;
 
+/// Maximum mouse movement, in CSS pixels, still considered a click.
+pub const CLICK_DRAG_THRESHOLD: f32 = 4.0;
+
 // ─── Galactic motion ─────────────────────────────────────────────────────────
 
 /// Real orbital speed of the Sun around the galactic centre (km/s).
