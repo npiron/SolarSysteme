@@ -108,22 +108,32 @@ fn select_planet(state: &mut AppState, idx: usize) {
         )
     };
 
-    let zoom_dist = (display_r * PLANET_ZOOM_FACTOR)
-        .max(state.renderer.camera.min_distance * 1.5);
+    let zoom_dist = (display_r * PLANET_ZOOM_FACTOR).max(state.renderer.camera.min_distance * 1.5);
     state.renderer.camera.set_target(body_pos, zoom_dist);
 
     // Changing selection clears any existing camera lock.
     state.camera_locked = false;
     state.selected_planet = Some(idx);
 
-    show_planet_panel(name, radius_km, dist_au, period_days, incl_rad, is_star, false);
+    show_planet_panel(
+        name,
+        radius_km,
+        dist_au,
+        period_days,
+        incl_rad,
+        is_star,
+        false,
+    );
 }
 
 /// Deselect the current body and return the camera to the overview.
 fn deselect_all(state: &mut AppState) {
     state.selected_planet = None;
     state.camera_locked = false;
-    state.renderer.camera.set_target(Vec3::ZERO, CAMERA_DISTANCE);
+    state
+        .renderer
+        .camera
+        .set_target(Vec3::ZERO, CAMERA_DISTANCE);
     hide_planet_panel();
 }
 
@@ -333,9 +343,7 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
                     .map(|b| (b.position, b.display_radius))
                     .collect();
 
-                if let Some(idx) =
-                    raycast_planets(&s.renderer.camera, &body_data, x, y, w, h)
-                {
+                if let Some(idx) = raycast_planets(&s.renderer.camera, &body_data, x, y, w, h) {
                     select_planet(&mut s, idx);
                     toggle_camera_lock(&mut s);
                 }
@@ -514,16 +522,15 @@ fn bind_keyboard_events(state: &Rc<RefCell<AppState>>) {
                 let mut s = state.borrow_mut();
                 deselect_all(&mut s);
                 // Reset camera to default distance & angles
-                s.renderer.camera.set_target(
-                    glam::Vec3::ZERO,
-                    crate::constants::CAMERA_DISTANCE,
-                );
+                s.renderer
+                    .camera
+                    .set_target(glam::Vec3::ZERO, crate::constants::CAMERA_DISTANCE);
             }
             // T → top-down view
             "t" | "T" => {
                 e.prevent_default();
                 let mut s = state.borrow_mut();
-                s.renderer.camera.phi = crate::constants::PHI_CLAMP;  // look from above
+                s.renderer.camera.phi = crate::constants::PHI_CLAMP; // look from above
                 s.renderer.camera.theta = 0.0;
             }
             // Escape → deselect planet, return to overview

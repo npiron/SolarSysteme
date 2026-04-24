@@ -55,7 +55,11 @@ impl AppState {
     pub fn tick(&mut self, dt: f64) {
         self.simulation.update(dt);
 
-        let fps = if dt > 0.0 { (1.0 / dt).min(1000.0) as f32 } else { 0.0 };
+        let fps = if dt > 0.0 {
+            (1.0 / dt).min(1000.0) as f32
+        } else {
+            0.0
+        };
         crate::hud::update(
             self.simulation.time.current_days,
             self.simulation.time.days_per_second,
@@ -69,8 +73,7 @@ impl AppState {
             if let Some(idx) = self.selected_planet
                 && idx < self.simulation.bodies.len()
             {
-                self.renderer.camera.lerp_target =
-                    Some(self.simulation.bodies[idx].position);
+                self.renderer.camera.lerp_target = Some(self.simulation.bodies[idx].position);
             }
         } else {
             // Default: keep camera centred on the Sun so it follows galactic drift.

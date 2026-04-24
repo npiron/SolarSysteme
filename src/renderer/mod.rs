@@ -18,8 +18,8 @@ pub mod texture;
 use camera::Camera;
 use mesh::{create_line_vao, create_mesh_vao, create_trail_vao};
 use render_pass::{
-    FrameContext, OrbitPass, PlanetPass, RenderPass, RingPass, StarfieldPass,
-    TrailPass, TrailBuffer,
+    FrameContext, OrbitPass, PlanetPass, RenderPass, RingPass, StarfieldPass, TrailBuffer,
+    TrailPass,
 };
 use shader::ShaderProgram;
 use std::cell::RefCell;
