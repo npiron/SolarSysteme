@@ -11,8 +11,8 @@ use web_sys::HtmlCanvasElement;
 
 use crate::app::AppState;
 use crate::constants::{
-    CAMERA_DISTANCE, DEFAULT_DAYS_PER_SECOND, PLANET_CLICK_RADIUS_FACTOR, PLANET_ZOOM_FACTOR,
-    TOUCH_ZOOM_MULTIPLIER,
+    CAMERA_DISTANCE, CLICK_DRAG_THRESHOLD, DEFAULT_DAYS_PER_SECOND, PLANET_CLICK_RADIUS_FACTOR,
+    PLANET_ZOOM_FACTOR, TOUCH_ZOOM_MULTIPLIER,
 };
 use crate::renderer::camera::Camera;
 use glam::Vec3;
@@ -74,7 +74,7 @@ fn raycast_planets(
         if discriminant >= 0.0 {
             let t = -b - discriminant.sqrt();
             let t = if t > 0.0 { t } else { -b + discriminant.sqrt() };
-            if t > 0.0 && nearest.map_or(true, |(_, d)| t < d) {
+            if t > 0.0 && nearest.is_none_or(|(_, d)| t < d) {
                 nearest = Some((i, t));
             }
         }
@@ -219,6 +219,7 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
             s.mouse_down = true;
             s.last_mouse_x = e.client_x() as f32;
             s.last_mouse_y = e.client_y() as f32;
+            s.mouse_drag_distance = 0.0;
         }) as Box<dyn FnMut(web_sys::MouseEvent)>);
         canvas
             .add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())
@@ -246,6 +247,7 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
             if s.mouse_down {
                 let dx = e.client_x() as f32 - s.last_mouse_x;
                 let dy = e.client_y() as f32 - s.last_mouse_y;
+                s.mouse_drag_distance += dx.hypot(dy);
                 s.renderer.camera.rotate(dx, dy);
             }
             s.last_mouse_x = e.client_x() as f32;
@@ -257,12 +259,29 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
         closure.forget();
     }
 
+    // Mouse leave — stop dragging if the pointer exits the canvas.
+    {
+        let state = Rc::clone(state);
+        let closure = Closure::wrap(Box::new(move |_: web_sys::MouseEvent| {
+            state.borrow_mut().mouse_down = false;
+        }) as Box<dyn FnMut(web_sys::MouseEvent)>);
+        canvas
+            .add_event_listener_with_callback("mouseleave", closure.as_ref().unchecked_ref())
+            .expect("Failed to bind mouseleave listener");
+        closure.forget();
+    }
+
     // Click — raycasting to select a planet
     {
         let state = Rc::clone(state);
         let canvas_click = canvas.clone();
         let closure = Closure::wrap(Box::new(move |e: web_sys::MouseEvent| {
             let mut s = state.borrow_mut();
+            if s.mouse_drag_distance > CLICK_DRAG_THRESHOLD {
+                s.mouse_drag_distance = 0.0;
+                return;
+            }
+
             let x = e.offset_x() as f32;
             let y = e.offset_y() as f32;
             let w = canvas_click.client_width() as f32;
@@ -282,6 +301,7 @@ fn bind_mouse_events(canvas: &HtmlCanvasElement, state: &Rc<RefCell<AppState>>) 
                 Some(idx) => select_planet(&mut s, idx),
                 None => deselect_all(&mut s),
             }
+            s.mouse_drag_distance = 0.0;
         }) as Box<dyn FnMut(web_sys::MouseEvent)>);
         canvas
             .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())

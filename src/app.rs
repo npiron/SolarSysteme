@@ -16,6 +16,7 @@ pub struct AppState {
     pub mouse_down: bool,
     pub last_mouse_x: f32,
     pub last_mouse_y: f32,
+    pub mouse_drag_distance: f32,
     pub last_touch_x: f32,
     pub last_touch_y: f32,
     pub touch_distance: Option<f32>,
@@ -37,6 +38,7 @@ impl AppState {
             mouse_down: false,
             last_mouse_x: 0.0,
             last_mouse_y: 0.0,
+            mouse_drag_distance: 0.0,
             last_touch_x: 0.0,
             last_touch_y: 0.0,
             touch_distance: None,
@@ -64,11 +66,11 @@ impl AppState {
         // If locked, keep the lerp target on the moving planet so the camera
         // continuously follows it.
         if self.camera_locked {
-            if let Some(idx) = self.selected_planet {
-                if idx < self.simulation.bodies.len() {
-                    self.renderer.camera.lerp_target =
-                        Some(self.simulation.bodies[idx].position);
-                }
+            if let Some(idx) = self.selected_planet
+                && idx < self.simulation.bodies.len()
+            {
+                self.renderer.camera.lerp_target =
+                    Some(self.simulation.bodies[idx].position);
             }
         } else {
             // Default: keep camera centred on the Sun so it follows galactic drift.

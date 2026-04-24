@@ -442,15 +442,17 @@ mod tests {
 
     #[test]
     fn camera_near_less_than_far() {
-        assert!(CAMERA_NEAR < CAMERA_FAR);
+        const { assert!(CAMERA_NEAR < CAMERA_FAR) };
     }
 
     #[test]
     fn starfield_radius_exceeds_camera_max() {
-        assert!(
+        const {
+            assert!(
             STARFIELD_RADIUS > CAMERA_MAX_DISTANCE,
             "Stars should be beyond max zoom-out distance"
-        );
+            )
+        };
     }
 
     // ── Planet selection / camera transition ──
